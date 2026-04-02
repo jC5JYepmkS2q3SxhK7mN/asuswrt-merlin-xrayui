@@ -112,7 +112,7 @@
       </tr>
       <tr v-if="hasDomain">
         <th>
-          Domain
+          {{ $t('com.NetworkHysteria.label_finalmask_domain') }}
         </th>
         <td>
           <input type="text" class="input_25_table" v-model="finalmaskDomain" autocomplete="off" autocorrect="off" autocapitalize="off" />

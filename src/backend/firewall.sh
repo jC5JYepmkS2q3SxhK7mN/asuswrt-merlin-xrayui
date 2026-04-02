@@ -427,7 +427,7 @@ configure_firewall_client() {
         # Block QUIC (UDP 443)
         if [ "$xray_block_quic" = "true" ]; then
             log_info "Blocking QUIC (UDP 443) to prevent IP address leak"
-            ipt "$IPT_TABLE" -I XRAYUI 1 -p udp --dport 443 -j REJECT
+            ipt "$IPT_TABLE" -I XRAYUI 1 -p udp --dport 443 -j DROP
         fi
     fi
 

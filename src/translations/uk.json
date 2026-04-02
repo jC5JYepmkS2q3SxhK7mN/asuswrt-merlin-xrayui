@@ -613,8 +613,8 @@
       "hint_port": "Порт сервера, зазвичай той самий, на якому сервер Hysteria прослуховує з'єднання."
     },
     "HysteriaInbound": {
-      "modal_title": "Hysteria Inbound",
-      "modal_desc": "Hysteria inbound accepts connections from Hysteria clients. It uses a custom QUIC-based protocol optimized for lossy and unstable connections."
+      "modal_title": "Hysteria (вхідний)",
+      "modal_desc": "Вхідне з'єднання Hysteria приймає підключення від клієнтів Hysteria. Використовує власний QUIC-протокол, оптимізований для нестабільних з'єднань із втратами."
     },
     "CertificatesModal": {
       "modal_title": "Керування TLS-сертифікатом",
@@ -745,6 +745,8 @@
       "hint_finalmask_type": "Тип обфускації finalmask. <ul><li>`salamander`: проста обфускація UDP на основі пароля</li><li>`sudoku`: перетворення зовнішнього вигляду байтів з налаштовуваним кодуванням</li></ul>",
       "label_finalmask_password": "Пароль",
       "hint_finalmask_password": "Спільний секрет для обфускації. Має збігатися з конфігурацією сервера.",
+      "label_finalmask_domain": "Домен",
+      "hint_finalmask_domain": "Доменне ім'я для обфускації Finalmask (наприклад, `t.example.com`). Має збігатися з конфігурацією сервера.",
       "label_sudoku_ascii": "Режим ASCII",
       "hint_sudoku_ascii": "Керує зовнішнім виглядом байтів. `prefer_entropy` створює високоентропійний вивід. `prefer_ascii` створює вивід, схожий на друковані ASCII-символи.",
       "label_sudoku_padding_min": "Мін. падінг (%)",

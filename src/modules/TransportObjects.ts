@@ -598,7 +598,7 @@ export class XrayHysteriaMasqueradeObject {
   public statusCode?: number;
 
   normalize = (): this | undefined => {
-    if (!this.type || this.type === '') return undefined;
+    this.type = this.type === '' ? undefined : this.type;
     this.dir = this.type === 'file' && this.dir ? this.dir : undefined;
     this.url = this.type === 'proxy' && this.url ? this.url : undefined;
     this.rewriteHost = this.type === 'proxy' && this.rewriteHost ? this.rewriteHost : undefined;

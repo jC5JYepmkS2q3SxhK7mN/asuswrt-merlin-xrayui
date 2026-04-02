@@ -613,8 +613,8 @@
       "hint_port": "服务器端口，通常与 Hysteria 服务器监听端口一致。"
     },
     "HysteriaInbound": {
-      "modal_title": "Hysteria Inbound",
-      "modal_desc": "Hysteria inbound accepts connections from Hysteria clients. It uses a custom QUIC-based protocol optimized for lossy and unstable connections."
+      "modal_title": "Hysteria 入站",
+      "modal_desc": "Hysteria 入站接受来自 Hysteria 客户端的连接。它使用自定义的基于 QUIC 的协议，针对高丢包和不稳定的连接进行了优化。"
     },
     "CertificatesModal": {
       "modal_title": "管理 TLS 证书",
@@ -746,6 +746,8 @@
       "hint_finalmask_type": "Finalmask 混淆类型。<ul><li>`salamander`：基于密码的简单 UDP 混淆</li><li>`sudoku`：可配置编码的字节外观变换</li></ul>",
       "label_finalmask_password": "密码",
       "hint_finalmask_password": "混淆共享密钥。必须与服务器配置匹配。",
+      "label_finalmask_domain": "域名",
+      "hint_finalmask_domain": "Finalmask 混淆域名（例如 `t.example.com`）。必须与服务器配置匹配。",
       "label_sudoku_ascii": "ASCII 模式",
       "hint_sudoku_ascii": "控制字节外观。`prefer_entropy` 产生高熵输出。`prefer_ascii` 产生类似可打印 ASCII 的输出。",
       "label_sudoku_padding_min": "最小填充 (%)",

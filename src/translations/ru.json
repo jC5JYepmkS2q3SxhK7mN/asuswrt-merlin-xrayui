@@ -748,6 +748,8 @@
       "hint_finalmask_type": "Тип обфускации finalmask. <ul><li>`salamander`: простая обфускация UDP на основе пароля</li><li>`sudoku`: преобразование внешнего вида байтов с настраиваемым кодированием</li></ul>",
       "label_finalmask_password": "Пароль",
       "hint_finalmask_password": "Общий секрет для обфускации. Должен совпадать с конфигурацией сервера.",
+      "label_finalmask_domain": "Домен",
+      "hint_finalmask_domain": "Доменное имя для обфускации Finalmask (например, `t.example.com`). Должно совпадать с конфигурацией сервера.",
       "label_sudoku_ascii": "Режим ASCII",
       "hint_sudoku_ascii": "Управляет внешним видом байтов. `prefer_entropy` создаёт высокоэнтропийный вывод. `prefer_ascii` создаёт вывод, похожий на печатные ASCII-символы.",
       "label_sudoku_padding_min": "Мин. паддинг (%)",

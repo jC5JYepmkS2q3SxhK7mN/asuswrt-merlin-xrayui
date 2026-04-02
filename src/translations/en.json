@@ -749,6 +749,8 @@
       "hint_finalmask_type": "Type of finalmask obfuscation. <ul><li>`salamander`: simple password-based UDP obfuscation</li><li>`sudoku`: byte-appearance transformation with configurable encoding</li></ul>",
       "label_finalmask_password": "Password",
       "hint_finalmask_password": "Shared secret for obfuscation. Must match the server configuration.",
+      "label_finalmask_domain": "Domain",
+      "hint_finalmask_domain": "Domain name for Finalmask obfuscation (e.g., `t.example.com`). Must match the server configuration.",
       "label_sudoku_ascii": "ASCII Mode",
       "hint_sudoku_ascii": "Controls byte appearance. `prefer_entropy` produces high-entropy output. `prefer_ascii` produces printable ASCII-like output.",
       "label_sudoku_padding_min": "Padding Min (%)",

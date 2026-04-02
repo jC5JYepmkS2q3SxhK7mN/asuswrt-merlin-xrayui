@@ -503,8 +503,8 @@
       "hint_port": "Server-Port, normalerweise derselbe Port, auf dem der Hysteria-Server lauscht."
     },
     "HysteriaInbound": {
-      "modal_title": "Hysteria Inbound",
-      "modal_desc": "Hysteria inbound accepts connections from Hysteria clients. It uses a custom QUIC-based protocol optimized for lossy and unstable connections."
+      "modal_title": "Hysteria Eingehend",
+      "modal_desc": "Hysteria Eingehend akzeptiert Verbindungen von Hysteria-Clients. Es verwendet ein benutzerdefiniertes QUIC-basiertes Protokoll, das für verlustbehaftete und instabile Verbindungen optimiert ist."
     },
     "NetworkHysteria": {
       "title": "Hysteria-Transporteinstellungen",
@@ -531,6 +531,8 @@
       "hint_finalmask_type": "Typ der Finalmask-Verschleierung. <ul><li>`salamander`: einfache passwortbasierte UDP-Verschleierung</li><li>`sudoku`: Byte-Erscheinungstransformation mit konfigurierbarer Kodierung</li></ul>",
       "label_finalmask_password": "Passwort",
       "hint_finalmask_password": "Gemeinsames Geheimnis für die Verschleierung. Muss mit der Serverkonfiguration übereinstimmen.",
+      "label_finalmask_domain": "Domain",
+      "hint_finalmask_domain": "Domainname für Finalmask-Verschleierung (z.B. `t.example.com`). Muss mit der Serverkonfiguration übereinstimmen.",
       "label_sudoku_ascii": "ASCII-Modus",
       "hint_sudoku_ascii": "Steuert das Byte-Erscheinungsbild. `prefer_entropy` erzeugt hochentropische Ausgabe. `prefer_ascii` erzeugt druckbare ASCII-ähnliche Ausgabe.",
       "label_sudoku_padding_min": "Min. Padding (%)",
