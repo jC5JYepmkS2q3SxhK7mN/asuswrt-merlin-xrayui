@@ -8,7 +8,8 @@ import {
   XrayShadowsocksClientObject,
   XrayTrojanClientObject,
   XraySocksClientObject,
-  XrayWireguardClientObject
+  XrayWireguardClientObject,
+  XrayHysteriaClientObject
 } from './ClientsObjects';
 import { plainToInstance } from 'class-transformer';
 
@@ -80,7 +81,7 @@ export class XrayVlessInboundObject implements IProtocolType {
     return this.clients.map((c) => c.email).filter((email): email is string => email !== undefined);
   };
   normalize = (): this | undefined => {
-    this.clients.forEach((c) => c.normalize());
+    this.clients = this.clients.map((c) => plainToInstance(XrayVlessClientObject, c).normalize());
     return this;
   };
 }
@@ -91,7 +92,7 @@ export class XrayVmessInboundObject implements IProtocolType {
     return this.clients.map((c) => c.email).filter((email): email is string => email !== undefined);
   };
   normalize = (): this | undefined => {
-    this.clients.forEach((c) => c.normalize());
+    this.clients = this.clients.map((c) => plainToInstance(XrayVmessClientObject, c).normalize());
     return this;
   };
 }
@@ -177,6 +178,20 @@ export class XrayWireguardInboundObject implements IProtocolType {
   public peers: XrayWireguardClientObject[] = [];
 
   normalize = (): this | undefined => {
+    return this;
+  };
+}
+
+export class XrayHysteriaInboundObject implements IProtocolType {
+  public version? = 2;
+  public clients: XrayHysteriaClientObject[] = [];
+
+  getUserNames = (): string[] => {
+    return this.clients.map((c) => c.email).filter((email): email is string => email !== undefined);
+  };
+
+  normalize = (): this | undefined => {
+    this.clients = this.clients.map((c) => plainToInstance(XrayHysteriaClientObject, c).normalize());
     return this;
   };
 }

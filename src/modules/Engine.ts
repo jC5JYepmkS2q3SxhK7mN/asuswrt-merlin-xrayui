@@ -51,7 +51,8 @@ import {
   XrayTunInboundObject,
   XrayVlessInboundObject,
   XrayVmessInboundObject,
-  XrayWireguardInboundObject
+  XrayWireguardInboundObject,
+  XrayHysteriaInboundObject
 } from './InboundObjects';
 import {
   XrayStreamHttpSettingsObject,
@@ -601,6 +602,10 @@ export class Engine {
           case XrayProtocol.TUN:
             proxy = plainToInstance(XrayInboundObject<XrayTunInboundObject>, proxy);
             proxy.settings = plainToInstance(XrayTunInboundObject, proxy.settings) ?? new XrayTunInboundObject();
+            break;
+          case XrayProtocol.HYSTERIA:
+            proxy = plainToInstance(XrayInboundObject<XrayHysteriaInboundObject>, proxy);
+            proxy.settings = plainToInstance(XrayHysteriaInboundObject, proxy.settings) ?? new XrayHysteriaInboundObject();
             break;
         }
 

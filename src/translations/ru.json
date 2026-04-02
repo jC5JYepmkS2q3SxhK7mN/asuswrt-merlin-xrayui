@@ -615,6 +615,10 @@
       "hint_address": "Адрес сервера Hysteria; поддерживает доменные имена, IPv4 и IPv6.",
       "hint_port": "Порт сервера, обычно совпадающий с портом, на котором сервер Hysteria прослушивает соединения."
     },
+    "HysteriaInbound": {
+      "modal_title": "Hysteria (входящий)",
+      "modal_desc": "Входящее подключение Hysteria принимает соединения от клиентов Hysteria. Использует собственный QUIC-протокол, оптимизированный для нестабильных соединений с потерями."
+    },
     "CertificatesModal": {
       "modal_title": "Управление TLS-сертификатом",
       "label_ocsp_stapling": "OCSP stapling",
@@ -742,7 +746,25 @@
       "label_salamander_enabled": "Включить Salamander",
       "hint_salamander_enabled": "Salamander — это протокол маскировки/обфускации UDP, который скрывает характеристики трафика Hysteria для избежания обнаружения.",
       "label_salamander_password": "Пароль обфускации",
-      "hint_salamander_password": "Пароль для обфускации Salamander. Должен совпадать с конфигурацией сервера."
+      "hint_salamander_password": "Пароль для обфускации Salamander. Должен совпадать с конфигурацией сервера.",
+      "label_udp_idle_timeout": "Таймаут бездействия UDP",
+      "hint_udp_idle_timeout": "Время ожидания бездействия в секундах для одного QUIC UDP-соединения. По умолчанию 60 секунд.",
+      "label_masquerade_enabled": "Включить маскировку",
+      "hint_masquerade_enabled": "HTTP/3 маскировка страницы. При включении сервер отдаёт поддельную страницу не-Hysteria клиентам для маскировки сервиса.",
+      "label_masquerade_type": "Тип маскировки",
+      "hint_masquerade_type": "Тип маскировочного ответа. <ul><li>`file`: отдача файлов из директории</li><li>`proxy`: обратный прокси на другой URL</li><li>`string`: возврат пользовательской строки</li></ul>",
+      "label_masquerade_dir": "Директория",
+      "hint_masquerade_dir": "Директория для отдачи файлов при типе маскировки `file`.",
+      "label_masquerade_url": "URL прокси",
+      "hint_masquerade_url": "URL для обратного проксирования при типе маскировки `proxy`.",
+      "label_masquerade_rewrite_host": "Перезапись Host",
+      "hint_masquerade_rewrite_host": "Перезаписывать заголовок Host при проксировании запросов.",
+      "label_masquerade_insecure": "Небезопасный",
+      "hint_masquerade_insecure": "Разрешить небезопасные TLS-соединения к целевому прокси.",
+      "label_masquerade_content": "Содержимое",
+      "hint_masquerade_content": "Пользовательское содержимое строки при типе маскировки `string`.",
+      "label_masquerade_status_code": "Код статуса",
+      "hint_masquerade_status_code": "HTTP-код статуса при типе маскировки `string`."
     },
     "SockOpt": {
       "label": "Настройки прозрачного прокси",

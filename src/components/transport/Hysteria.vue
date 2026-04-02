@@ -72,6 +72,16 @@
     </tr>
     <tr>
       <th>
+        {{ $t('com.NetworkHysteria.label_udp_idle_timeout') }}
+        <hint v-html="$t('com.NetworkHysteria.hint_udp_idle_timeout')"></hint>
+      </th>
+      <td>
+        <input type="number" class="input_6_table" v-model.number="transport.hysteriaSettings.udpIdleTimeout" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        <span class="hint-color">default: 60 (seconds)</span>
+      </td>
+    </tr>
+    <tr>
+      <th>
         {{ $t('com.NetworkHysteria.label_salamander_enabled') }}
         <hint v-html="$t('com.NetworkHysteria.hint_salamander_enabled')"></hint>
       </th>
@@ -88,14 +98,90 @@
         <input type="text" class="input_25_table" v-model="salamanderPassword" autocomplete="off" autocorrect="off" autocapitalize="off" />
       </td>
     </tr>
+    <tr>
+      <th>
+        {{ $t('com.NetworkHysteria.label_masquerade_enabled') }}
+        <hint v-html="$t('com.NetworkHysteria.hint_masquerade_enabled')"></hint>
+      </th>
+      <td>
+        <input type="checkbox" v-model="masqueradeEnabled" />
+      </td>
+    </tr>
+    <template v-if="masqueradeEnabled && transport.hysteriaSettings.masquerade">
+      <tr>
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_type') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_type')"></hint>
+        </th>
+        <td>
+          <select class="input_option" v-model="transport.hysteriaSettings.masquerade.type">
+            <option v-for="(opt, index) in masqueradeTypes" :key="index" :value="opt">{{ opt === '' ? 'default (404)' : opt }}</option>
+          </select>
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'file'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_dir') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_dir')"></hint>
+        </th>
+        <td>
+          <input type="text" class="input_25_table" v-model="transport.hysteriaSettings.masquerade.dir" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'proxy'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_url') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_url')"></hint>
+        </th>
+        <td>
+          <input type="text" class="input_25_table" v-model="transport.hysteriaSettings.masquerade.url" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'proxy'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_rewrite_host') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_rewrite_host')"></hint>
+        </th>
+        <td>
+          <input type="checkbox" v-model="transport.hysteriaSettings.masquerade.rewriteHost" />
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'proxy'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_insecure') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_insecure')"></hint>
+        </th>
+        <td>
+          <input type="checkbox" v-model="transport.hysteriaSettings.masquerade.insecure" />
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'string'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_content') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_content')"></hint>
+        </th>
+        <td>
+          <input type="text" class="input_25_table" v-model="transport.hysteriaSettings.masquerade.content" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </td>
+      </tr>
+      <tr v-if="transport.hysteriaSettings.masquerade.type === 'string'">
+        <th>
+          {{ $t('com.NetworkHysteria.label_masquerade_status_code') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_masquerade_status_code')"></hint>
+        </th>
+        <td>
+          <input type="number" class="input_6_table" v-model.number="transport.hysteriaSettings.masquerade.statusCode" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </td>
+      </tr>
+    </template>
   </tbody>
 </template>
 
 <script lang="ts">
-  import { defineComponent, ref, watch, computed } from 'vue';
+  import { defineComponent, ref, computed } from 'vue';
   import Hint from '@main/Hint.vue';
   import { XrayStreamSettingsObject } from '@/modules/CommonObjects';
-  import { XrayStreamHysteriaSettingsObject, XrayUdpHopObject, XrayFinalMaskObject, XraySalamanderObject } from '@/modules/TransportObjects';
+  import { XrayStreamHysteriaSettingsObject, XrayHysteriaMasqueradeObject, XrayUdpHopObject, XrayFinalMaskObject, XraySalamanderObject } from '@/modules/TransportObjects';
 
   export default defineComponent({
     name: 'NetworkHysteria',
@@ -151,12 +237,28 @@
         }
       });
 
+      const masqueradeTypes = XrayHysteriaMasqueradeObject.typeOptions;
+
+      const masqueradeEnabled = computed({
+        get: () => !!transport.value.hysteriaSettings?.masquerade,
+        set: (val) => {
+          if (!transport.value.hysteriaSettings) return;
+          if (val) {
+            transport.value.hysteriaSettings.masquerade = new XrayHysteriaMasqueradeObject();
+          } else {
+            transport.value.hysteriaSettings.masquerade = undefined;
+          }
+        }
+      });
+
       return {
         transport,
         congestionOptions,
         udphopEnabled,
         salamanderEnabled,
-        salamanderPassword
+        salamanderPassword,
+        masqueradeEnabled,
+        masqueradeTypes
       };
     }
   });

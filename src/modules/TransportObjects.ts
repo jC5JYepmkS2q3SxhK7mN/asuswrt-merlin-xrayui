@@ -304,6 +304,31 @@ export class XrayFinalMaskObject {
   };
 }
 
+export class XrayHysteriaMasqueradeObject {
+  static readonly typeOptions = ['', 'file', 'proxy', 'string'];
+
+  public type? = '';
+  public dir?: string;
+  public url?: string;
+  public rewriteHost? = false;
+  public insecure? = false;
+  public content?: string;
+  public headers?: Record<string, string>;
+  public statusCode?: number;
+
+  normalize = (): this | undefined => {
+    if (!this.type || this.type === '') return undefined;
+    this.dir = this.type === 'file' && this.dir ? this.dir : undefined;
+    this.url = this.type === 'proxy' && this.url ? this.url : undefined;
+    this.rewriteHost = this.type === 'proxy' && this.rewriteHost ? this.rewriteHost : undefined;
+    this.insecure = this.type === 'proxy' && this.insecure ? this.insecure : undefined;
+    this.content = this.type === 'string' && this.content ? this.content : undefined;
+    this.headers = this.type === 'string' && this.headers && Object.keys(this.headers).length > 0 ? this.headers : undefined;
+    this.statusCode = this.type === 'string' && this.statusCode ? this.statusCode : undefined;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
 export class XrayStreamHysteriaSettingsObject implements ITransportNetwork {
   static readonly congestionOptions = ['', 'reno', 'bbr', 'brutal', 'force-brutal'];
 
@@ -313,6 +338,8 @@ export class XrayStreamHysteriaSettingsObject implements ITransportNetwork {
   public up?: string;
   public down?: string;
   public udphop?: XrayUdpHopObject;
+  public udpIdleTimeout?: number;
+  public masquerade?: XrayHysteriaMasqueradeObject;
 
   constructor() {
     this.version = 2;
@@ -324,9 +351,14 @@ export class XrayStreamHysteriaSettingsObject implements ITransportNetwork {
     this.congestion = !this.congestion || this.congestion === '' ? undefined : this.congestion;
     this.up = !this.up || this.up === '' ? undefined : this.up;
     this.down = !this.down || this.down === '' ? undefined : this.down;
+    this.udpIdleTimeout = this.udpIdleTimeout && this.udpIdleTimeout !== 60 ? this.udpIdleTimeout : undefined;
 
     if (this.udphop && typeof this.udphop.normalize === 'function') {
       this.udphop = this.udphop.normalize();
+    }
+
+    if (this.masquerade && typeof this.masquerade.normalize === 'function') {
+      this.masquerade = this.masquerade.normalize();
     }
 
     return isObjectEmpty(this) ? undefined : this;

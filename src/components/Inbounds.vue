@@ -96,6 +96,7 @@
   import TrojanInbound from '@ibd/TrojanInbound.vue';
   import WireguardInbound from '@ibd/WireguardInbound.vue';
   import TunInbound from '@ibd/TunInbound.vue';
+  import HysteriaInbound from '@ibd/HysteriaInbound.vue';
   import draggable from 'vuedraggable';
 
   import { useI18n } from 'vue-i18n';
@@ -136,6 +137,8 @@
             return WireguardInbound;
           case XrayProtocol.TUN:
             return TunInbound;
+          case XrayProtocol.HYSTERIA:
+            return HysteriaInbound;
           default:
             return null;
         }
