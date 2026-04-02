@@ -72,16 +72,17 @@
           <span class="hint-color"> [<a href="https://github.com/v2fly/domain-list-community/tree/master/data" target="_blank">geosite</a>] </span>
         </td>
       </tr>
-      <!-- <tr>
-                    <th>Balancers</th>
-                    <td>
-                        {{ routing.rules.length }} item(s)
-                        <input class="button_gen button_gen_small" type="button" value="Manage"
-                            @click.prevent="manage_balancers()" />
-                        <span class="hint-color"></span>
-                    </td>
-                </tr>
-                -->
+      <tr v-if="routing.balancers">
+        <th>
+          {{ $t('com.Routing.label_balancers') }}
+          <hint v-html="$t('com.Routing.hint_balancers')"></hint>
+        </th>
+        <td>
+          {{ routing.balancers.length }} item(s)
+          <input class="button_gen button_gen_small" type="button" :value="$t('labels.manage')" @click.prevent="manage_balancers()" />
+          <balancer-modal ref="balancerModal" v-model:balancers="routing.balancers"></balancer-modal>
+        </td>
+      </tr>
     </tbody>
   </table>
 </template>
@@ -94,6 +95,7 @@
   import engine, { EngineResponseConfig, SubmitActions } from '@/modules/Engine';
   import PolicyModal from '@modal/PolicyModal.vue';
   import RulesModal from '@modal/RulesModal.vue';
+  import BalancerModal from '@modal/BalancerModal.vue';
   import Hint from '@main/Hint.vue';
   import GeodatModal from '@modal/GeodatModal.vue';
   export default defineComponent({
@@ -102,11 +104,13 @@
       Hint,
       RulesModal,
       PolicyModal,
+      BalancerModal,
       GeodatModal
     },
     setup() {
       const modal = ref();
       const policyModal = ref();
+      const balancerModal = ref();
       const geodatModal = ref();
       const daysPassed = ref(0);
       const routing = ref<XrayRoutingObject>(xrayConfig.routing || new XrayRoutingObject());
@@ -149,6 +153,10 @@
         policyModal.value.show();
       };
 
+      const manage_balancers = async () => {
+        balancerModal.value.show();
+      };
+
       const manage_rules = async () => {
         modal.value.show((rules: XrayRoutingRuleObject[], disabled_rules: XrayRoutingRuleObject[]) => {});
       };
@@ -173,10 +181,12 @@
         daysPassed,
         modal,
         policyModal,
+        balancerModal,
         update_geodat,
         manage_geodat,
         manage_rules,
         manage_policy,
+        manage_balancers,
         countRules,
         countPolicies,
         domainStrategyOptions: XrayRoutingObject.domainStrategyOptions,

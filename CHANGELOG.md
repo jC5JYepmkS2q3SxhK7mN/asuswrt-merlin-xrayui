@@ -9,6 +9,7 @@
 - FIXED: `IPv6` traffic could bypass the proxy in some cases due to a missing firewall rule.
 - ADDED: `Block QUIC` option in General Settings > DNS to prevent IP address leaks through QUIC protocol.
 - ADDED: Custom backup names — optionally name your backups when creating them for easier identification later (e.g. `xrayui-20260402-143022-before-update.tar.gz`).
+- ADDED: Load balancers — distribute traffic across multiple proxy servers automatically. If a server goes down, traffic can fall back to a backup. Set up balancers in `Routing` and assign them to rules instead of a single `outbound`.
 
 ## [0.65.0] - 2026-02-22
 

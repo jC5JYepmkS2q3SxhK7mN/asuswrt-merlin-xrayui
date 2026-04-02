@@ -194,7 +194,27 @@
       "hint_policies": "配置设备路由策略。您可以根据 MAC 地址或 TCP/UDP 端口号来微调流量处理方式。目前支持 bypass 和 redirect 两种方式 ",
       "hint_rules": "域名规则列表。对于每个连接，路由将按顺序从上到下判断这些规则。当遇到第一个有效规则时，将连接转发到规则指定的 outboundTag 或 balancerTag。 <blockquote>当没有规则匹配时，流量默认通过第一个出站发送。</blockquote>",
       "hint_geodat_metadata": "更新 GeoIP 和 GeoSite 元数据文件。此操作需要一些时间，请耐心等待。",
-      "hint_ports_policy": "默认情况下，使用 `redirect` 模式，即所有端口的流量都重定向到 xray 的入站端口。指定任何应通过或绕过 Xray 路由的其他端口。 <ul> <li><strong>redirect</strong>：所有端口的流量都重定向到入站端口。您定义不应重定向到 Xray 的端口。</li> <li><strong>bypass</strong>：所有端口的流量都绕过 Xray。您定义应明确重定向到 Xray 的端口。</li> </ul>"
+      "hint_ports_policy": "默认情况下，使用 `redirect` 模式，即所有端口的流量都重定向到 xray 的入站端口。指定任何应通过或绕过 Xray 路由的其他端口。 <ul> <li><strong>redirect</strong>：所有端口的流量都重定向到入站端口。您定义不应重定向到 Xray 的端口。</li> <li><strong>bypass</strong>：所有端口的流量都绕过 Xray。您定义应明确重定向到 Xray 的端口。</li> </ul>",
+      "label_balancers": "负载均衡器",
+      "hint_balancers": "负载均衡器将流量分配到多个出站连接。当负载均衡器生效时，它会根据配置的策略从指定的出站连接中选择最合适的一个。"
+    },
+    "BalancerModal": {
+      "modal_title": "管理负载均衡器",
+      "modal_title2": "负载均衡器列表",
+      "modal_edit_title": "负载均衡器",
+      "balancer_no": "负载均衡器 #{0}",
+      "no_balancers_defined": "未定义负载均衡器",
+      "label_tag": "标签",
+      "hint_tag": "此负载均衡器的标识符，用于匹配路由规则中的 <strong>balancerTag</strong>。",
+      "label_strategy": "策略",
+      "hint_strategy": "负载均衡策略。<ul><li><strong>random</strong>：随机选择一个匹配的出站代理。（默认）</li><li><strong>roundRobin</strong>：按顺序轮流选择匹配的出站代理。</li><li><strong>leastPing</strong>：选择延迟最低的出站连接。需要配置 observatory 或 burstObservatory。</li><li><strong>leastLoad</strong>：选择最稳定的出站连接。需要配置 observatory 或 burstObservatory。</li></ul>",
+      "label_selector": "选择器",
+      "hint_selector": "一个字符串数组，用于对出站标签进行<strong>前缀匹配</strong>。例如，如果您有出站连接 <code>[\"us-1\", \"us-2\", \"eu-1\"]</code>，选择器 <code>us-</code> 将匹配 <code>[\"us-1\", \"us-2\"]</code>。<br/>每行输入一个选择器。",
+      "placeholder_selector": "输入出站标签前缀，每行一个\n例如：\nproxy-\nus-",
+      "label_fallback_tag": "备用出站",
+      "hint_fallback_tag": "如果此负载均衡器选择的所有出站连接都不可用，流量将被发送到此备用出站。<br/><strong>注意：</strong>需要配置 observatory 或 burstObservatory。",
+      "label_matching": "匹配的出站连接",
+      "none": "（无）"
     },
     "PolicyModal": {
       "modal_title2": "策略列表",
@@ -249,7 +269,14 @@
       "hint_target_ips": "一个数组，每个项代表一个 IP 范围。当目标 IP 与数组中的任何 IP 范围匹配时，此规则将生效。",
       "hint_target_ports": "目标端口范围，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li><li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>",
       "hint_source_ips": "一个数组，每个项代表一个 IP 范围，格式为 IP、CIDR、GeoIP 或从文件加载 IP。当源 IP 与数组中的任何 IP 范围匹配时，此规则将生效。",
-      "hint_source_ports": "源端口，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li> <li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>"
+      "hint_source_ports": "源端口，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li> <li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>",
+      "label_target_type": "目标类型",
+      "hint_target_type": "选择此规则将流量路由到特定出站连接还是负载均衡器。",
+      "target_outbound": "出站连接",
+      "target_balancer": "负载均衡器",
+      "label_balancer_tag": "负载均衡器",
+      "hint_balancer_tag": "负载均衡器的标签。此规则将把匹配的流量转发到指定的负载均衡器。",
+      "no_balancers": "未定义负载均衡器。请先在路由部分添加负载均衡器。"
     },
     "Inbounds": {
       "title": "入站",
@@ -673,7 +700,8 @@
       "clear_all_confirm": "确定清除所有备份?",
       "restore_confirm": "确定恢复此备份?\n警告: 将覆盖当前配置。\n\n建议恢复前创建备份。",
       "download": "下载",
-      "restore": "恢复"
+      "restore": "恢复",
+      "name_placeholder": "自定义名称（可选）"
     },
     "Logs": {
       "title": "Xray 日志",

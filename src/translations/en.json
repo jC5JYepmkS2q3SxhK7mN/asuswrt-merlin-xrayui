@@ -197,7 +197,27 @@
       "hint_policies": "Configure per-device routing policies (bypass or redirect) for Xray. You can specify MAC addresses, modes (`bypass` or `redirect`), and ports to fine-tune how traffic is handled.",
       "hint_rules": "An array corresponding to a list of rules. For each connection, the routing will judge these rules from top to bottom in order. When it encounters the first effective rule, it will forward the connection to the outboundTag or balancerTag specified by the rule. <blockquote>When no rules match, the traffic is sent out by the first outbound by default.</blockquote>",
       "hint_geodat_metadata": "Update the GeoIP and GeoSite metadata files. This operation will take some time, please be patient.",
-      "hint_ports_policy": "By default, the mode `redirect` is used, meaning that traffic on all ports is redirected to the inbound port of xray. Specify any additional ports that should be routed through or bypass Xray. <ul> <li><strong>redirect</strong>: Traffic on all ports is redirected to the inbound port. You define the ports that should NOT be redirected to Xray.</li> <li><strong>bypass</strong>: Traffic on all ports bypasses Xray. You define the ports that should be explicitly redirected to Xray.</li> </ul>"
+      "hint_ports_policy": "By default, the mode `redirect` is used, meaning that traffic on all ports is redirected to the inbound port of xray. Specify any additional ports that should be routed through or bypass Xray. <ul> <li><strong>redirect</strong>: Traffic on all ports is redirected to the inbound port. You define the ports that should NOT be redirected to Xray.</li> <li><strong>bypass</strong>: Traffic on all ports bypasses Xray. You define the ports that should be explicitly redirected to Xray.</li> </ul>",
+      "label_balancers": "Balancers",
+      "hint_balancers": "Load balancers distribute traffic across multiple outbounds. When a balancer takes effect, it selects the most suitable outbound from the specified outbounds according to the configured strategy."
+    },
+    "BalancerModal": {
+      "modal_title": "Manage Balancers",
+      "modal_title2": "Balancer List",
+      "modal_edit_title": "Balancer",
+      "balancer_no": "balancer #{0}",
+      "no_balancers_defined": "No balancers defined",
+      "label_tag": "Tag",
+      "hint_tag": "The identifier of this load balancer, used to match <strong>balancerTag</strong> in routing rules.",
+      "label_strategy": "Strategy",
+      "hint_strategy": "The load balancing strategy.<ul><li><strong>random</strong>: Randomly selects a matched outbound proxy. (Default)</li><li><strong>roundRobin</strong>: Selects matched outbound proxies in order.</li><li><strong>leastPing</strong>: Selects the outbound with the lowest latency. Requires observatory or burstObservatory.</li><li><strong>leastLoad</strong>: Selects the most stable outbound. Requires observatory or burstObservatory.</li></ul>",
+      "label_selector": "Selectors",
+      "hint_selector": "An array of strings used for <strong>prefix matching</strong> against outbound tags. For example, if you have outbounds <code>[\"us-1\", \"us-2\", \"eu-1\"]</code>, selector <code>us-</code> will match <code>[\"us-1\", \"us-2\"]</code>.<br/>Enter one selector per line.",
+      "placeholder_selector": "Enter outbound tag prefixes, one per line\ne.g.\nproxy-\nus-",
+      "label_fallback_tag": "Fallback outbound",
+      "hint_fallback_tag": "If all outbounds selected by this balancer are unavailable, traffic will be sent to this fallback outbound.<br/><strong>Note:</strong> Requires observatory or burstObservatory configuration.",
+      "label_matching": "Matching outbounds",
+      "none": "(none)"
     },
     "PolicyModal": {
       "modal_title2": "Policy List",
@@ -252,7 +272,14 @@
       "hint_target_ips": "An array where each item represents an IP range. This rule will take effect when the target IP matches any of the IP ranges in the array.",
       "hint_target_ports": "The target port range, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li><li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>",
       "hint_source_ips": "An array where each item represents an IP range in the format of IP, CIDR, GeoIP, or loading IP from a file. This rule will take effect when the source IP matches any of the IP ranges in the array.",
-      "hint_source_ports": "The source port, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li> <li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>"
+      "hint_source_ports": "The source port, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li> <li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>",
+      "label_target_type": "Target type",
+      "hint_target_type": "Choose whether this rule routes to a specific outbound or to a load balancer.",
+      "target_outbound": "Outbound",
+      "target_balancer": "Balancer",
+      "label_balancer_tag": "Balancer",
+      "hint_balancer_tag": "The tag of the balancer. This rule will forward matched traffic to the specified load balancer.",
+      "no_balancers": "No balancers defined. Add balancers in the Routing section first."
     },
     "Inbounds": {
       "title": "Inbounds",
@@ -676,7 +703,8 @@
       "clear_all_confirm": "Are you sure you want to clear all the backups?",
       "restore_confirm": "Are you sure  you want to restore this backup?\nWarning: This will overwrite the current configuration.\n\nIt is recommended to create a backup before restoring.",
       "download": "download",
-      "restore": "restore"
+      "restore": "restore",
+      "name_placeholder": "Custom name (optional)"
     },
     "Logs": {
       "title": "Xray Logs",

@@ -297,11 +297,100 @@ All traffic goes through Xray for evaluation.
 
 ### Balancers
 
-Rules can route traffic to balancers instead of a single outbound:
+Balancers distribute traffic across multiple outbound connections. Instead of routing to a single outbound, a rule can route to a balancer, which then selects the best outbound based on the configured strategy.
 
-```yaml
-Outbound: balancer-us
-```
+#### When to use balancers
+
+- You have multiple proxy servers and want to spread load across them
+- You want automatic failover if one server goes down
+- You want to route to the lowest-latency server
+
+#### Managing balancers
+
+1. Go to the **Routing** section
+1. Click **Manage** next to **Balancers**
+   ![balancers list](../.vuepress/public/images/routing/20260402103932.png)
+
+1. Click **Add** to create a new balancer
+   ![balancer](../.vuepress/public/images/routing/20260402104056.png)
+
+#### Balancer fields
+
+| Field                 | Description                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| **Tag**               | Unique identifier. Used to reference this balancer from routing rules via balancerTag.   |
+| **Strategy**          | How the balancer picks an outbound (see below).                                          |
+| **Selectors**         | Prefix patterns to match outbound tags. One per line. E.g., `us-` matches `us-1`.        |
+| **Fallback outbound** | Outbound to use if all matched outbounds are unavailable. Requires observatory.          |
+
+#### Strategies
+
+| Strategy       | Description                                                                 |
+| -------------- | --------------------------------------------------------------------------- |
+| `random`       | Randomly selects a matched outbound. **(Default)**                          |
+| `roundRobin`   | Selects matched outbounds in sequential order.                              |
+| `leastPing`    | Selects the outbound with the lowest latency. Requires observatory.         |
+| `leastLoad`    | Selects the most stable outbound based on observations. Requires observatory. |
+
+> [!note]
+> The `leastPing` and `leastLoad` strategies require `observatory` or `burstObservatory` configuration in your Xray config to function. Without it, they behave like `random`.
+
+#### Selector matching
+
+Selectors use **prefix matching** against outbound tags. For example:
+
+| Outbound tags                      | Selector | Matched                  |
+| ---------------------------------- | -------- | ------------------------ |
+| `us-1`, `us-2`, `eu-1`, `eu-2`    | `us-`    | `us-1`, `us-2`           |
+| `proxy-a`, `proxy-b`, `direct`    | `proxy-` | `proxy-a`, `proxy-b`     |
+| `fast`, `fallback`                | `f`      | `fast`, `fallback`       |
+
+The edit form shows a live preview of matching outbounds below the selector field.
+
+#### Using balancers in rules
+
+When editing a routing rule, choose **Balancer** as the target type instead of **Outbound**:
+
+![balancer rule](../.vuepress/public/images/routing/20260402104147.png)
+
+Then select the balancer tag from the dropdown. Rules with a balancer target show a ⚖ icon in the rules list.
+
+> [!important]
+> A rule can have either `outboundTag` or `balancerTag`, not both. Switching the target type clears the other field.
+
+#### Example: Round-robin across US proxies
+
+1. Create outbounds: `us-east`, `us-west`, `us-central`
+2. Create a balancer:
+
+   ```yaml
+   Tag: us-balance
+   Strategy: roundRobin
+   Selectors: us-
+   ```
+
+3. Create a routing rule:
+
+   ```yaml
+   Friendly Name: US traffic balanced
+   Target type: Balancer
+   Balancer: us-balance
+   Domains: geosite:netflix, geosite:youtube
+   ```
+
+#### Example: Failover with fallback
+
+1. Create outbounds: `primary-proxy`, `backup-proxy`
+2. Create a balancer:
+
+   ```yaml
+   Tag: failover
+   Strategy: leastPing
+   Selectors: primary-
+   Fallback outbound: backup-proxy
+   ```
+
+3. Route traffic to the `failover` balancer. If `primary-proxy` becomes unreachable, traffic automatically falls back to `backup-proxy`.
 
 ## Troubleshooting
 
