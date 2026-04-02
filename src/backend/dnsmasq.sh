@@ -144,7 +144,7 @@ EOF
             done
             $IONICE $NICE "$V2DAT" unpack geosite -p "$@" "$GEOSITE" |
                 awk '!/^#/ && !/^(keyword:|regexp:|full:)/' |
-                dnsmasq_domain_to_ipset_bulk "$SET_V4" "$SET_V6" "$(is_ipv6_enabled)" >&3
+                dnsmasq_domain_to_ipset_bulk "$SET_V4" "$SET_V6" "$(is_ipv6_enabled && echo 1)" >&3
         fi
 
         if [ -n "$tags_xrayui_list" ]; then
@@ -155,7 +155,7 @@ EOF
             done
             $IONICE $NICE "$V2DAT" unpack geosite -p "$@" "$GEOSITE_XRAUI" |
                 awk '!/^#/ && !/^(keyword:|regexp:|full:)/' |
-                dnsmasq_domain_to_ipset_bulk "$SET_V4" "$SET_V6" "$(is_ipv6_enabled)" >&3
+                dnsmasq_domain_to_ipset_bulk "$SET_V4" "$SET_V6" "$(is_ipv6_enabled && echo 1)" >&3
         fi
 
         if [ -n "$ip_list" ]; then
