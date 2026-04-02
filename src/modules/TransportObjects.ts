@@ -291,16 +291,322 @@ export class XraySalamanderObject {
   };
 }
 
-export class XrayFinalMaskObject {
-  public type = 'salamander';
-  public settings?: XraySalamanderObject;
+export class XraySudokuObject {
+  static readonly asciiOptions = ['prefer_entropy', 'prefer_ascii'];
+
+  public password?: string;
+  public ascii? = 'prefer_entropy';
+  public customTable?: string;
+  public customTables?: string[];
+  public paddingMin?: number;
+  public paddingMax?: number;
 
   normalize = (): this | undefined => {
+    this.password = !this.password || this.password === '' ? undefined : this.password;
+    if (!this.password) return undefined;
+    this.ascii = this.ascii === 'prefer_entropy' || !this.ascii ? undefined : this.ascii;
+    this.customTable = !this.customTable || this.customTable === '' ? undefined : this.customTable;
+    this.customTables = this.customTables?.length ? this.customTables.filter((t) => t !== '') : undefined;
+    if (this.customTables?.length === 0) this.customTables = undefined;
+    this.paddingMin = this.paddingMin != null && this.paddingMin > 0 ? this.paddingMin : undefined;
+    this.paddingMax = this.paddingMax != null && this.paddingMax > 0 ? this.paddingMax : undefined;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayFragmentObject {
+  public packets?: string;
+  public length?: string;
+  public delay?: string;
+  public maxSplit?: string;
+
+  normalize = (): this | undefined => {
+    this.packets = !this.packets || this.packets === '' ? undefined : this.packets;
+    this.length = !this.length || this.length === '' ? undefined : this.length;
+    this.delay = !this.delay || this.delay === '' ? undefined : this.delay;
+    this.maxSplit = !this.maxSplit || this.maxSplit === '' ? undefined : this.maxSplit;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayNoiseItemObject {
+  public rand?: string;
+  public randRange? = '0-255';
+  public type?: string;
+  public packet?: any[];
+  public delay?: string;
+}
+
+export class XrayNoiseObject {
+  public reset? = 0;
+  public noise?: XrayNoiseItemObject[];
+
+  normalize = (): this | undefined => {
+    this.reset = this.reset != null && this.reset > 0 ? this.reset : undefined;
+    this.noise = this.noise && this.noise.length > 0 ? this.noise : undefined;
+    if (!this.noise) return undefined;
+    return this;
+  };
+}
+
+export class XrayHeaderCustomSettingsObject {
+  // TCP variant: clients[][], servers[][], errors[][]
+  public clients?: any[][];
+  public servers?: any[][];
+  public errors?: any[][];
+  // UDP variant: client[], server[]
+  public client?: any[];
+  public server?: any[];
+
+  normalize = (): this | undefined => {
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayHeaderDnsObject {
+  public domain?: string;
+
+  normalize = (): this | undefined => {
+    this.domain = !this.domain || this.domain === '' ? undefined : this.domain;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayMkcpAes128GcmObject {
+  public password?: string;
+
+  normalize = (): this | undefined => {
+    this.password = !this.password || this.password === '' ? undefined : this.password;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayXdnsObject {
+  public domain?: string;
+
+  normalize = (): this | undefined => {
+    this.domain = !this.domain || this.domain === '' ? undefined : this.domain;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayXicmpObject {
+  public listenIp? = '0.0.0.0';
+  public id? = 0;
+
+  normalize = (): this | undefined => {
+    this.listenIp = this.listenIp === '0.0.0.0' || !this.listenIp ? undefined : this.listenIp;
+    this.id = this.id === 0 ? undefined : this.id;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export type FinalMaskSettingsType =
+  | XraySalamanderObject
+  | XraySudokuObject
+  | XrayFragmentObject
+  | XrayNoiseObject
+  | XrayHeaderCustomSettingsObject
+  | XrayHeaderDnsObject
+  | XrayMkcpAes128GcmObject
+  | XrayXdnsObject
+  | XrayXicmpObject;
+
+export class XrayFinalMaskObject {
+  static readonly udpMaskTypes = [
+    'salamander',
+    'sudoku',
+    'noise',
+    'header-custom',
+    'header-dns',
+    'header-dtls',
+    'header-srtp',
+    'header-utp',
+    'header-wechat',
+    'header-wireguard',
+    'mkcp-original',
+    'mkcp-aes128gcm',
+    'xdns',
+    'xicmp'
+  ];
+  static readonly tcpMaskTypes = ['fragment', 'header-custom', 'sudoku'];
+  static readonly noSettingsTypes = new Set([
+    'header-dtls',
+    'header-srtp',
+    'header-utp',
+    'header-wechat',
+    'header-wireguard',
+    'mkcp-original'
+  ]);
+
+  public type = 'salamander';
+  public settings?: FinalMaskSettingsType;
+
+  normalize = (): this | undefined => {
+    if (XrayFinalMaskObject.noSettingsTypes.has(this.type)) {
+      this.settings = undefined;
+      return this;
+    }
     if (this.settings && typeof this.settings.normalize === 'function') {
       this.settings = this.settings.normalize();
     }
     if (!this.settings) return undefined;
     return this;
+  };
+
+  static createSettings(type: string): FinalMaskSettingsType | undefined {
+    switch (type) {
+      case 'salamander':
+        return new XraySalamanderObject();
+      case 'sudoku':
+        return new XraySudokuObject();
+      case 'fragment':
+        return new XrayFragmentObject();
+      case 'noise':
+        return new XrayNoiseObject();
+      case 'header-custom':
+        return new XrayHeaderCustomSettingsObject();
+      case 'header-dns':
+        return new XrayHeaderDnsObject();
+      case 'mkcp-aes128gcm':
+        return new XrayMkcpAes128GcmObject();
+      case 'xdns':
+        return new XrayXdnsObject();
+      case 'xicmp':
+        return new XrayXicmpObject();
+      default:
+        return undefined;
+    }
+  }
+
+  static deserializeSettings(type: string, data: any): FinalMaskSettingsType | undefined {
+    if (!data) return undefined;
+    switch (type) {
+      case 'salamander':
+        return plainToInstance(XraySalamanderObject, data);
+      case 'sudoku':
+        return plainToInstance(XraySudokuObject, data);
+      case 'fragment':
+        return plainToInstance(XrayFragmentObject, data);
+      case 'noise':
+        return plainToInstance(XrayNoiseObject, data);
+      case 'header-custom':
+        return plainToInstance(XrayHeaderCustomSettingsObject, data);
+      case 'header-dns':
+        return plainToInstance(XrayHeaderDnsObject, data);
+      case 'mkcp-aes128gcm':
+        return plainToInstance(XrayMkcpAes128GcmObject, data);
+      case 'xdns':
+        return plainToInstance(XrayXdnsObject, data);
+      case 'xicmp':
+        return plainToInstance(XrayXicmpObject, data);
+      default:
+        return undefined;
+    }
+  }
+}
+
+export class XrayQuicParamsUdpHopObject {
+  public ports?: string;
+  public interval?: string;
+
+  normalize = (): this | undefined => {
+    this.ports = !this.ports || this.ports === '' ? undefined : this.ports;
+    this.interval = !this.interval || this.interval === '' ? undefined : this.interval;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayQuicParamsObject {
+  static readonly congestionOptions = ['reno', 'bbr', 'brutal', 'force-brutal'];
+
+  public congestion?: string;
+  public debug? = false;
+  public brutalUp?: string | number;
+  public brutalDown?: string | number;
+  public udpHop?: XrayQuicParamsUdpHopObject;
+  public initStreamReceiveWindow? = 8388608;
+  public maxStreamReceiveWindow? = 8388608;
+  public initConnectionReceiveWindow? = 20971520;
+  public maxConnectionReceiveWindow? = 20971520;
+  public maxIdleTimeout? = 30;
+  public keepAlivePeriod? = 0;
+  public disablePathMTUDiscovery? = false;
+  public maxIncomingStreams? = 1024;
+
+  normalize = (): this | undefined => {
+    this.congestion = !this.congestion || this.congestion === '' ? undefined : this.congestion;
+    this.debug = !this.debug ? undefined : this.debug;
+    this.brutalUp = !this.brutalUp || this.brutalUp === '' || this.brutalUp === 0 ? undefined : this.brutalUp;
+    this.brutalDown = !this.brutalDown || this.brutalDown === '' || this.brutalDown === 0 ? undefined : this.brutalDown;
+    if (this.udpHop) {
+      this.udpHop = plainToInstance(XrayQuicParamsUdpHopObject, this.udpHop);
+      this.udpHop = this.udpHop.normalize();
+    }
+    this.initStreamReceiveWindow = this.initStreamReceiveWindow === 8388608 ? undefined : this.initStreamReceiveWindow;
+    this.maxStreamReceiveWindow = this.maxStreamReceiveWindow === 8388608 ? undefined : this.maxStreamReceiveWindow;
+    this.initConnectionReceiveWindow = this.initConnectionReceiveWindow === 20971520 ? undefined : this.initConnectionReceiveWindow;
+    this.maxConnectionReceiveWindow = this.maxConnectionReceiveWindow === 20971520 ? undefined : this.maxConnectionReceiveWindow;
+    this.maxIdleTimeout = this.maxIdleTimeout === 30 ? undefined : this.maxIdleTimeout;
+    this.keepAlivePeriod = !this.keepAlivePeriod ? undefined : this.keepAlivePeriod;
+    this.disablePathMTUDiscovery = !this.disablePathMTUDiscovery ? undefined : this.disablePathMTUDiscovery;
+    this.maxIncomingStreams = this.maxIncomingStreams === 1024 ? undefined : this.maxIncomingStreams;
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayFinalMaskSettingsObject {
+  public udp?: XrayFinalMaskObject[];
+  public tcp?: XrayFinalMaskObject[];
+  public quicParams?: XrayQuicParamsObject;
+
+  normalize = (): this | undefined => {
+    if (this.udp && this.udp.length > 0) {
+      this.udp = this.udp
+        .map((mask) => (typeof mask.normalize === 'function' ? mask.normalize() : mask))
+        .filter((mask): mask is XrayFinalMaskObject => mask !== undefined);
+      if (this.udp.length === 0) this.udp = undefined;
+    } else {
+      this.udp = undefined;
+    }
+    if (this.tcp && this.tcp.length > 0) {
+      this.tcp = this.tcp
+        .map((mask) => (typeof mask.normalize === 'function' ? mask.normalize() : mask))
+        .filter((mask): mask is XrayFinalMaskObject => mask !== undefined);
+      if (this.tcp.length === 0) this.tcp = undefined;
+    } else {
+      this.tcp = undefined;
+    }
+    if (this.quicParams) {
+      this.quicParams = plainToInstance(XrayQuicParamsObject, this.quicParams);
+      this.quicParams = this.quicParams.normalize();
+    }
+    return isObjectEmpty(this) ? undefined : this;
+  };
+}
+
+export class XrayHysteriaMasqueradeObject {
+  static readonly typeOptions = ['', 'file', 'proxy', 'string'];
+
+  public type? = '';
+  public dir?: string;
+  public url?: string;
+  public rewriteHost? = false;
+  public insecure? = false;
+  public content?: string;
+  public headers?: Record<string, string>;
+  public statusCode?: number;
+
+  normalize = (): this | undefined => {
+    this.type = this.type === '' ? undefined : this.type;
+    this.dir = this.type === 'file' && this.dir ? this.dir : undefined;
+    this.url = this.type === 'proxy' && this.url ? this.url : undefined;
+    this.rewriteHost = this.type === 'proxy' && this.rewriteHost ? this.rewriteHost : undefined;
+    this.insecure = this.type === 'proxy' && this.insecure ? this.insecure : undefined;
+    this.content = this.type === 'string' && this.content ? this.content : undefined;
+    this.headers = this.type === 'string' && this.headers && Object.keys(this.headers).length > 0 ? this.headers : undefined;
+    this.statusCode = this.type === 'string' && this.statusCode ? this.statusCode : undefined;
+    return isObjectEmpty(this) ? undefined : this;
   };
 }
 
@@ -313,6 +619,8 @@ export class XrayStreamHysteriaSettingsObject implements ITransportNetwork {
   public up?: string;
   public down?: string;
   public udphop?: XrayUdpHopObject;
+  public udpIdleTimeout?: number;
+  public masquerade?: XrayHysteriaMasqueradeObject;
 
   constructor() {
     this.version = 2;
@@ -324,9 +632,14 @@ export class XrayStreamHysteriaSettingsObject implements ITransportNetwork {
     this.congestion = !this.congestion || this.congestion === '' ? undefined : this.congestion;
     this.up = !this.up || this.up === '' ? undefined : this.up;
     this.down = !this.down || this.down === '' ? undefined : this.down;
+    this.udpIdleTimeout = this.udpIdleTimeout && this.udpIdleTimeout !== 60 ? this.udpIdleTimeout : undefined;
 
     if (this.udphop && typeof this.udphop.normalize === 'function') {
       this.udphop = this.udphop.normalize();
+    }
+
+    if (this.masquerade && typeof this.masquerade.normalize === 'function') {
+      this.masquerade = this.masquerade.normalize();
     }
 
     return isObjectEmpty(this) ? undefined : this;

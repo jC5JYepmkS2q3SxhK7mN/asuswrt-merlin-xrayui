@@ -67,6 +67,16 @@ This forces the router (dnsmasq) to use only your Xray DNS inbound and disables 
 > [!warning]
 > This switch does not create or configure the inbound; enable it after the DNS inbound is working. Turning it on too early can temporarily break name resolution.
 
+### Block QUIC
+
+QUIC is a protocol that uses UDP port 443. In some cases, QUIC traffic may bypass the transparent proxy, which can cause your real IP address to leak — especially over IPv6.
+
+Go to `General Settings` → `DNS` and enable **Block QUIC**.
+This will reject all QUIC (UDP 443) traffic at the firewall level, forcing your browser and apps to fall back to regular TCP HTTPS, which is properly proxied through Xray.
+
+> [!note]
+> Blocking QUIC does not break websites. All modern browsers seamlessly fall back to HTTPS over TCP when QUIC is unavailable. You may notice a small initial delay on the first connection to some sites.
+
 ## Testing
 
 For testing, create an additional rule that proxies traffic through your outbound and list the test services in it (for example, `browserleaks.com`).

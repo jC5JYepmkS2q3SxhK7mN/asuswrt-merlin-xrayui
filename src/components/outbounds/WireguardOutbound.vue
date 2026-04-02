@@ -15,7 +15,7 @@
             <hint> The private key for the Wireguard protocol. **Required**. </hint>
           </th>
           <td>
-            <input type="text" class="input_20_table" v-model="proxy.settings.privateKey" autocomplete="off" autocorrect="off" autocapitalize="off" />
+            <input type="text" class="input_20_table" v-model="proxy.settings.secretKey" autocomplete="off" autocorrect="off" autocapitalize="off" />
             <span class="hint-color">required</span>
           </td>
         </tr>

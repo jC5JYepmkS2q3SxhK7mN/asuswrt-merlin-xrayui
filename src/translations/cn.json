@@ -100,7 +100,9 @@
       "button_subscription_fetch": "获取",
       "tab_dns": "DNS",
       "label_dns_leak": "防止 DNS 泄漏",
-      "hint_dns_leak": "启用此选项以防止 DNS 泄漏。<blockquote>**重要！** 在未正确配置 Xray 之前，请不要将此选项设置为 `on`。单击复选框旁的“帮助”以了解有关 DNS 泄漏及其正确配置的更多信息。</blockquote>",
+      "hint_dns_leak": "启用此选项以防止 DNS 泄漏。<blockquote>**重要！** 在未正确配置 Xray 之前，请不要将此选项设置为 `on`。单击复选框旁的\"帮助\"以了解有关 DNS 泄漏及其正确配置的更多信息。</blockquote>",
+      "label_block_quic": "阻止 QUIC",
+      "hint_block_quic": "阻止 QUIC（UDP 443）以防止 IP 地址泄漏。启用后，客户端将回退到 TCP HTTPS，该协议可通过 Xray 正确代理。",
       "label_logs_scribe": "将 XRAYUI 日志集成到 Scribe",
       "hint_logs_scribe": "启用此选项将 XRAYUI 日志与 `Scribe` 集成。这允许您在 `Scribe` 的 Web 界面中专用窗口查看 XRAYUI 日志。<hr/>您可以通过 `AMTM` 安装 `Scribe`",
       "label_subscription_auto_refresh": "自动刷新订阅",
@@ -112,7 +114,7 @@
       "hint_subscription_auto_fallback": "启用后，开启了自动故障转移的出站将定期检查，当前端点不可达时自动切换到可用端点。",
       "label_subscription_fallback_interval": "健康检查间隔",
       "hint_subscription_fallback_interval": "检查池管理出站健康状态的频率。",
-      "warn_auto_fallback_requires_observatory": "需要在「通用」选项卡中启用 Xray 连接检查。",
+      "warn_auto_fallback_requires_observatory": "需要在\"通用\"选项卡中启用 Xray 连接检查。",
       "label_subscription_filters": "轮换过滤器",
       "hint_subscription_filters": "按名称过滤用于自动故障转移轮换的订阅链接。<hr/>输入逗号分隔的关键词（例如 <code>Canada, Denmark</code>）。<hr/>仅使用名称包含至少一个关键词的链接。<hr/>如果为空，则使用完整的订阅池。",
       "placeholder_subscription_filters": "例如 Canada, Denmark, Japan"
@@ -192,7 +194,27 @@
       "hint_policies": "配置设备路由策略。您可以根据 MAC 地址或 TCP/UDP 端口号来微调流量处理方式。目前支持 bypass 和 redirect 两种方式 ",
       "hint_rules": "域名规则列表。对于每个连接，路由将按顺序从上到下判断这些规则。当遇到第一个有效规则时，将连接转发到规则指定的 outboundTag 或 balancerTag。 <blockquote>当没有规则匹配时，流量默认通过第一个出站发送。</blockquote>",
       "hint_geodat_metadata": "更新 GeoIP 和 GeoSite 元数据文件。此操作需要一些时间，请耐心等待。",
-      "hint_ports_policy": "默认情况下，使用 `redirect` 模式，即所有端口的流量都重定向到 xray 的入站端口。指定任何应通过或绕过 Xray 路由的其他端口。 <ul> <li><strong>redirect</strong>：所有端口的流量都重定向到入站端口。您定义不应重定向到 Xray 的端口。</li> <li><strong>bypass</strong>：所有端口的流量都绕过 Xray。您定义应明确重定向到 Xray 的端口。</li> </ul>"
+      "hint_ports_policy": "默认情况下，使用 `redirect` 模式，即所有端口的流量都重定向到 xray 的入站端口。指定任何应通过或绕过 Xray 路由的其他端口。 <ul> <li><strong>redirect</strong>：所有端口的流量都重定向到入站端口。您定义不应重定向到 Xray 的端口。</li> <li><strong>bypass</strong>：所有端口的流量都绕过 Xray。您定义应明确重定向到 Xray 的端口。</li> </ul>",
+      "label_balancers": "负载均衡器",
+      "hint_balancers": "负载均衡器将流量分配到多个出站连接。当负载均衡器生效时，它会根据配置的策略从指定的出站连接中选择最合适的一个。"
+    },
+    "BalancerModal": {
+      "modal_title": "管理负载均衡器",
+      "modal_title2": "负载均衡器列表",
+      "modal_edit_title": "负载均衡器",
+      "balancer_no": "负载均衡器 #{0}",
+      "no_balancers_defined": "未定义负载均衡器",
+      "label_tag": "标签",
+      "hint_tag": "此负载均衡器的标识符，用于匹配路由规则中的 <strong>balancerTag</strong>。",
+      "label_strategy": "策略",
+      "hint_strategy": "负载均衡策略。<ul><li><strong>random</strong>：随机选择一个匹配的出站代理。（默认）</li><li><strong>roundRobin</strong>：按顺序轮流选择匹配的出站代理。</li><li><strong>leastPing</strong>：选择延迟最低的出站连接。需要配置 observatory 或 burstObservatory。</li><li><strong>leastLoad</strong>：选择最稳定的出站连接。需要配置 observatory 或 burstObservatory。</li></ul>",
+      "label_selector": "选择器",
+      "hint_selector": "一个字符串数组，用于对出站标签进行<strong>前缀匹配</strong>。例如，如果您有出站连接 <code>[\"us-1\", \"us-2\", \"eu-1\"]</code>，选择器 <code>us-</code> 将匹配 <code>[\"us-1\", \"us-2\"]</code>。<br/>每行输入一个选择器。",
+      "placeholder_selector": "输入出站标签前缀，每行一个\n例如：\nproxy-\nus-",
+      "label_fallback_tag": "备用出站",
+      "hint_fallback_tag": "如果此负载均衡器选择的所有出站连接都不可用，流量将被发送到此备用出站。<br/><strong>注意：</strong>需要配置 observatory 或 burstObservatory。",
+      "label_matching": "匹配的出站连接",
+      "none": "（无）"
     },
     "PolicyModal": {
       "modal_title2": "策略列表",
@@ -247,7 +269,14 @@
       "hint_target_ips": "一个数组，每个项代表一个 IP 范围。当目标 IP 与数组中的任何 IP 范围匹配时，此规则将生效。",
       "hint_target_ports": "目标端口范围，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li><li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>",
       "hint_source_ips": "一个数组，每个项代表一个 IP 范围，格式为 IP、CIDR、GeoIP 或从文件加载 IP。当源 IP 与数组中的任何 IP 范围匹配时，此规则将生效。",
-      "hint_source_ports": "源端口，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li> <li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>"
+      "hint_source_ports": "源端口，可以采用以下三种形式：<ul><li>`a-b`：a 和 b 都是小于 `65536` 的正整数。此范围是一个闭区间，当目标端口落在该范围内时，此规则将生效。</li> <li>`a`：a 是小于 `65536` 的正整数。当目标端口是 a 时，此规则将生效。</li><li>上述两种形式的混合，用逗号分隔，例如：`53,443,1000-2000`。</li></ul>",
+      "label_target_type": "目标类型",
+      "hint_target_type": "选择此规则将流量路由到特定出站连接还是负载均衡器。",
+      "target_outbound": "出站连接",
+      "target_balancer": "负载均衡器",
+      "label_balancer_tag": "负载均衡器",
+      "hint_balancer_tag": "负载均衡器的标签。此规则将把匹配的流量转发到指定的负载均衡器。",
+      "no_balancers": "未定义负载均衡器。请先在路由部分添加负载均衡器。"
     },
     "Inbounds": {
       "title": "入站",
@@ -406,7 +435,7 @@
       "label_path": "HTTP 路径",
       "label_host": "Host",
       "hint_accept_proxy_protocol": "是否接受 PROXY 协议（用于传输真实源 IP 和端口）。<br />不熟悉时保持默认。<br />常见反向代理（如 HAProxy、NGINX）和 VLESS fallback xver 可配置发送 PROXY 协议。<br /> 启用后，TCP 连接建立后下游需先发送 PROXY v1/v2 格式的源 IP / 端口，否则终止连接。",
-      "hint_path": "HTTPUpgrade 连接使用的路径，默认值 `/`. <br />若路径包含ED查询参数（如： `/mypath?ed=2560`），将启用 “早期数据” 降低延迟，数值为首包大小阈值，超阈值时不启用，推荐值 `2560`。",
+      "hint_path": "HTTPUpgrade 连接使用的路径，默认值 `/`. <br />若路径包含ED查询参数（如： `/mypath?ed=2560`），将启用 \"早期数据\" 降低延迟，数值为首包大小阈值，超阈值时不启用，推荐值 `2560`。",
       "hint_host": "HTTPUpgrade 连接发送的 HTTP Host，默认空。<hr /> 服务器为空时不验证客户端 Host 头；若已定义则验证匹配。<hr /> 客户端 Host 头优先级：`host` > `headers` > `address`"
     },
     "HeadersMapping": {
@@ -479,7 +508,7 @@
       "label_port": "目标端口",
       "label_network": "网络协议",
       "label_follow_redirect": "跟随重定向",
-      "hint_address": "将流量转发到此地址。可以是一个 IP 地址，形如 `1.2.3.4`，或者一个域名，形如 `xray.com`。字符串类型。<hr/>启用「跟随重定向」时地址可为空。",
+      "hint_address": "将流量转发到此地址。可以是一个 IP 地址，形如 `1.2.3.4`，或者一个域名，形如 `xray.com`。字符串类型。<hr/>启用\"跟随重定向\"时地址可为空。",
       "hint_port": "将流量转发到目标地址的指定端口，范围 [1, 65535]，数值类型。**必填** ",
       "hint_network": "可接收的网络协议类型。比如当指定为 `tcp` 时，仅会接收 TCP 流量。默认值为 `tcp`。",
       "hint_follow_redirect": "启用时，dokodemo-door 会识别出由 iptables 转发而来的数据，并转发到相应的目标地址。详见传输配置中的tproxy设置。"
@@ -583,6 +612,10 @@
       "hint_address": "Hysteria 服务器地址，支持域名、IPv4 和 IPv6。",
       "hint_port": "服务器端口，通常与 Hysteria 服务器监听端口一致。"
     },
+    "HysteriaInbound": {
+      "modal_title": "Hysteria 入站",
+      "modal_desc": "Hysteria 入站接受来自 Hysteria 客户端的连接。它使用自定义的基于 QUIC 的协议，针对高丢包和不稳定的连接进行了优化。"
+    },
     "CertificatesModal": {
       "modal_title": "管理 TLS 证书",
       "label_ocsp_stapling": "OCSP 装订",
@@ -671,7 +704,8 @@
       "clear_all_confirm": "确定清除所有备份?",
       "restore_confirm": "确定恢复此备份?\n警告: 将覆盖当前配置。\n\n建议恢复前创建备份。",
       "download": "下载",
-      "restore": "恢复"
+      "restore": "恢复",
+      "name_placeholder": "自定义名称（可选）"
     },
     "Logs": {
       "title": "Xray 日志",
@@ -706,11 +740,39 @@
       "hint_udphop_port": "UDP 跳跃的端口范围（例如 `20000-50000`）。数据包将在此范围内的端口之间跳转。",
       "label_udphop_interval": "跳跃间隔",
       "hint_udphop_interval": "端口跳跃之间的时间间隔（秒）。默认为 30 秒。",
-      "salamander_title": "Salamander 混淆",
-      "label_salamander_enabled": "启用 Salamander",
-      "hint_salamander_enabled": "Salamander 是一种 UDP 掩码/混淆协议，可以伪装 Hysteria 流量特征以避免检测。",
-      "label_salamander_password": "混淆密码",
-      "hint_salamander_password": "Salamander 混淆的密码。必须与服务器配置匹配。"
+      "label_finalmask_enabled": "启用 Finalmask",
+      "hint_finalmask_enabled": "Finalmask 是一种 UDP 掩码/混淆层，可以伪装流量特征以避免检测。",
+      "label_finalmask_type": "掩码类型",
+      "hint_finalmask_type": "Finalmask 混淆类型。<ul><li>`salamander`：基于密码的简单 UDP 混淆</li><li>`sudoku`：可配置编码的字节外观变换</li></ul>",
+      "label_finalmask_password": "密码",
+      "hint_finalmask_password": "混淆共享密钥。必须与服务器配置匹配。",
+      "label_finalmask_domain": "域名",
+      "hint_finalmask_domain": "Finalmask 混淆域名（例如 `t.example.com`）。必须与服务器配置匹配。",
+      "label_sudoku_ascii": "ASCII 模式",
+      "hint_sudoku_ascii": "控制字节外观。`prefer_entropy` 产生高熵输出。`prefer_ascii` 产生类似可打印 ASCII 的输出。",
+      "label_sudoku_padding_min": "最小填充 (%)",
+      "hint_sudoku_padding": "填充百分比 (0-100)。添加随机填充以伪装数据包长度。",
+      "label_sudoku_padding_max": "最大填充 (%)",
+      "label_sudoku_custom_tables": "自定义表",
+      "hint_sudoku_custom_tables": "entropy 模式的自定义字节布局模式。每个模式为 8 个字符：恰好 2 个 `x`、2 个 `p` 和 4 个 `v`（例如 `xpxvvpvv`）。",
+      "label_udp_idle_timeout": "UDP 空闲超时",
+      "hint_udp_idle_timeout": "单个 QUIC 原生 UDP 连接的空闲等待时间（秒）。默认为 60 秒。",
+      "label_masquerade_enabled": "启用伪装",
+      "hint_masquerade_enabled": "HTTP/3 页面伪装。启用后，服务器会向非 Hysteria 客户端提供伪造页面以隐藏服务。",
+      "label_masquerade_type": "伪装类型",
+      "hint_masquerade_type": "伪装响应类型。<ul><li>`file`：从目录提供文件</li><li>`proxy`：反向代理到另一个 URL</li><li>`string`：返回自定义字符串</li></ul>",
+      "label_masquerade_dir": "目录",
+      "hint_masquerade_dir": "伪装类型为 `file` 时提供文件的目录。",
+      "label_masquerade_url": "代理 URL",
+      "hint_masquerade_url": "伪装类型为 `proxy` 时反向代理的 URL。",
+      "label_masquerade_rewrite_host": "重写 Host",
+      "hint_masquerade_rewrite_host": "代理请求时是否重写 Host 头。",
+      "label_masquerade_insecure": "不安全",
+      "hint_masquerade_insecure": "允许到代理目标的不安全 TLS 连接。",
+      "label_masquerade_content": "内容",
+      "hint_masquerade_content": "伪装类型为 `string` 时返回的自定义字符串内容。",
+      "label_masquerade_status_code": "状态码",
+      "hint_masquerade_status_code": "伪装类型为 `string` 时返回的 HTTP 状态码。"
     },
     "SockOpt": {
       "label": "透明代理设置",

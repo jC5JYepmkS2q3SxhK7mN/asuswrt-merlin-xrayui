@@ -70,7 +70,7 @@ export const xrayProtocols: XrayProtocolOption[] = [
   },
   {
     protocol: XrayProtocol.HYSTERIA,
-    modes: XrayProtocolMode.Outbound | XrayProtocolMode.BothModes
+    modes: XrayProtocolMode.TwoWays | XrayProtocolMode.BothModes
   }
 ];
 

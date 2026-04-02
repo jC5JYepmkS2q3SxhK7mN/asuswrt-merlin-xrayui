@@ -30,7 +30,7 @@
             <td style="color: #ffcc00">
               {{ !r.name ? getRuleName(r) : r.name }}
             </td>
-            <td>{{ r.outboundTag }}</td>
+            <td>{{ r.balancerTag ? '⚖ ' + r.balancerTag : r.outboundTag }}</td>
             <td>
               <text v-show="r.isSystem()">system rule</text>
               <span class="row-buttons">
@@ -69,6 +69,18 @@
         </tr>
         <tr>
           <th>
+            {{ $t('com.RulesModal.label_target_type') }}
+            <hint v-html="$t('com.RulesModal.hint_target_type')"></hint>
+          </th>
+          <td>
+            <select class="input_option" v-model="targetType" @change="onTargetTypeChange">
+              <option value="outbound">{{ $t('com.RulesModal.target_outbound') }}</option>
+              <option value="balancer">{{ $t('com.RulesModal.target_balancer') }}</option>
+            </select>
+          </td>
+        </tr>
+        <tr v-if="targetType === 'outbound'">
+          <th>
             {{ $t('com.RulesModal.label_outbound_tag') }}
             <hint v-html="$t('com.RulesModal.hint_outbound_tag')"></hint>
           </th>
@@ -78,7 +90,20 @@
                 {{ opt }}
               </option>
             </select>
-            <span class="hint-color"></span>
+          </td>
+        </tr>
+        <tr v-if="targetType === 'balancer'">
+          <th>
+            {{ $t('com.RulesModal.label_balancer_tag') }}
+            <hint v-html="$t('com.RulesModal.hint_balancer_tag')"></hint>
+          </th>
+          <td>
+            <select class="input_option" v-model="currentRule.balancerTag">
+              <option v-for="opt in balancerTags" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+            <span class="hint-color" v-if="!balancerTags.length">{{ $t('com.RulesModal.no_balancers') }}</span>
           </td>
         </tr>
         <tr>
@@ -277,6 +302,8 @@
       const outbounds = ref<string[]>([]);
       const inbounds = ref<string[]>([]);
       const users = ref<string[]>([]);
+      const balancerTags = ref<string[]>([]);
+      const targetType = ref<'outbound' | 'balancer'>('outbound');
       const filterText = ref<string>('');
 
       const currentPrefix = ref<'geosite:' | 'ext:xrayui:' | 'geoip:'>('geosite:');
@@ -305,6 +332,14 @@
         reindexRules();
       };
 
+      const onTargetTypeChange = () => {
+        if (targetType.value === 'outbound') {
+          currentRule.value.balancerTag = undefined;
+        } else {
+          currentRule.value.outboundTag = undefined;
+        }
+      };
+
       const addRule = () => {
         currentRule.value = new XrayRoutingRuleObject();
         domains.value = '';
@@ -313,6 +348,7 @@
         currentRule.value.inboundTag = [];
         currentRule.value.protocol = [];
         currentRule.value.user = [];
+        targetType.value = 'outbound';
         modalAdd.value?.show(() => {});
       };
 
@@ -321,6 +357,7 @@
         domains.value = rule.domain ? rule.domain.join('\n') : '';
         ips.value = rule.ip ? rule.ip.join('\n') : '';
         source.value = rule.source ? rule.source.join('\n') : '';
+        targetType.value = rule.balancerTag ? 'balancer' : 'outbound';
         modalAdd.value?.show(() => {});
       };
 
@@ -329,7 +366,8 @@
         newRule.enabled = currentRule.value.enabled;
         newRule.idx = currentRule.value.idx;
         newRule.name = currentRule.value.name;
-        newRule.outboundTag = currentRule.value.outboundTag;
+        newRule.outboundTag = targetType.value === 'outbound' ? currentRule.value.outboundTag : undefined;
+        newRule.balancerTag = targetType.value === 'balancer' ? currentRule.value.balancerTag : undefined;
         newRule.inboundTag = [...(currentRule.value.inboundTag || [])];
         newRule.domainMatcher = currentRule.value.domainMatcher;
         newRule.network = currentRule.value.network;
@@ -375,7 +413,7 @@
           return arr.length > 3 ? arr.slice(0, 3).join(', ') + ' …' : arr.join(', ');
         };
 
-        const outbound = rule.outboundTag || 'n/a';
+        const outbound = rule.balancerTag ? `⚖ ${rule.balancerTag}` : rule.outboundTag || 'n/a';
         const domains = summarize(rule.domain);
         const ips = summarize(rule.ip);
 
@@ -407,6 +445,10 @@
             .filter((tag): tag is string => tag !== undefined),
           ...reverse_portals
         ];
+
+        balancerTags.value = (xrayConfig.routing?.balancers || [])
+          .map((b) => b.tag)
+          .filter((tag): tag is string => !!tag);
 
         domains.value = currentRule.value.domain ? currentRule.value.domain.join('\n') : '';
         ips.value = currentRule.value.ip ? currentRule.value.ip.join('\n') : '';
@@ -553,6 +595,8 @@
         outbounds,
         inbounds,
         users,
+        balancerTags,
+        targetType,
         filterText,
         showSuggestionList,
         suggestionList,
@@ -567,6 +611,7 @@
         saveRule,
         show,
         getRuleName,
+        onTargetTypeChange,
         on_off_rule,
         reindexRules,
         filter_rules,

@@ -92,6 +92,10 @@ In `REDIRECT` mode, explicit rules that send domains to `FREEDOM` become redunda
 
 Sends DNS via your Xray path to prevent leaking queries. Do not enable without a compatible Xray DNS configuration. Read more [about DNS leaks here](dns-leak).
 
+### Block QUIC
+
+Blocks QUIC (UDP 443) to prevent your real IP address from leaking through the QUIC protocol. Clients will automatically fall back to regular HTTPS. Read more [about DNS leaks here](dns-leak).
+
 ## Geodata
 
 ![geodata](../.vuepress/public/images/general-options/20250816173221.png)

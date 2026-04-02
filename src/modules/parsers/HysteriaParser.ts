@@ -1,6 +1,6 @@
 import { XrayParsedUrlObject, XrayStreamSettingsObject, XrayStreamTlsSettingsObject } from '../CommonObjects';
 import { XrayOutboundObject, XrayHysteriaOutboundObject } from '../OutboundObjects';
-import { XrayStreamHysteriaSettingsObject, XrayFinalMaskObject, XraySalamanderObject } from '../TransportObjects';
+import { XrayStreamHysteriaSettingsObject, XrayFinalMaskObject, XrayFinalMaskSettingsObject, XraySalamanderObject } from '../TransportObjects';
 
 export default function HysteriaParser(parsedObj: XrayParsedUrlObject): XrayOutboundObject<XrayHysteriaOutboundObject> | null {
   if (parsedObj.protocol !== 'hy2' && parsedObj.protocol !== 'hysteria2' && parsedObj.protocol !== 'hysteria') return null;
@@ -73,9 +73,11 @@ export default function HysteriaParser(parsedObj: XrayParsedUrlObject): XrayOutb
 
   if (obfs === 'salamander' && obfsPassword) {
     const finalMask = new XrayFinalMaskObject();
-    finalMask.settings = new XraySalamanderObject();
-    finalMask.settings.password = obfsPassword;
-    proxy.streamSettings.udpmasks = [finalMask];
+    const salamander = new XraySalamanderObject();
+    salamander.password = obfsPassword;
+    finalMask.settings = salamander;
+    proxy.streamSettings.finalmask = new XrayFinalMaskSettingsObject();
+    proxy.streamSettings.finalmask.udp = [finalMask];
   }
 
   return proxy;

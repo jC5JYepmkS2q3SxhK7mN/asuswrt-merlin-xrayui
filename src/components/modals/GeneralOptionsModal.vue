@@ -116,6 +116,15 @@
                 >
               </td>
             </tr>
+            <tr>
+              <th>
+                {{ $t('com.GeneralOptionsModal.label_block_quic') }}
+                <hint v-html="$t('com.GeneralOptionsModal.hint_block_quic')"></hint>
+              </th>
+              <td>
+                <label class="go-option"><input type="checkbox" v-model="options.block_quic" /></label>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

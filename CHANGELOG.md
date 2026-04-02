@@ -1,5 +1,20 @@
 # XRAYUI Changelog
 
+## [0.66.0] - 2026-04-02
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: Wireguard outbound used incorrect field name `privateKey` instead of `secretKey`, causing Xray-core to reject the configuration.
+- FIXED: VLESS inbound clients with `flow: "none"` (e.g. when using XHTTP transport) were not normalized before saving, causing Xray-core to reject the configuration with _"flow doesn't support none in this version"_.
+- FIXED: `IPv6` traffic could bypass the proxy in some cases due to a missing firewall rule.
+- ADDED: `Block QUIC` option in General Settings > DNS to prevent IP address leaks through QUIC protocol.
+- ADDED: Custom backup names — optionally name your backups when creating them for easier identification later (e.g. `xrayui-20260402-143022-before-update.tar.gz`).
+- ADDED: Load balancers — distribute traffic across multiple proxy servers automatically. If a server goes down, traffic can fall back to a backup. Set up balancers in `Routing` and assign them to rules instead of a single `outbound`.
+- FIXED: QR code for VLESS clients always showed `type=tcp` regardless of the actual transport (e.g. XHTTP, WebSocket, gRPC).
+- ADDED: Hysteria2 inbound support — accept connections from Hysteria2 clients with client management, QR code sharing, and `hy2://` link generation. Includes masquerade (file/proxy/string) and UDP idle timeout settings in the Hysteria transport configuration.
+- ADDED: Full `FinalMask` support — all traffic obfuscation types from the latest Xray-core are now available, including `noise`, `fragment`, `header-custom`, `header-dns`, `xdns`, `xicmp`, `mkcp-aes128gcm`, and all legacy mKCP header types. QUIC parameters (congestion control, brutal mode, UDP port hopping, window tuning) are also supported.
+- FIXED: Inbound client normalization could fail with _"normalize is not a function"_ when loading configs with VLESS or VMess inbound clients.
+
 ## [0.65.0] - 2026-02-22
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._

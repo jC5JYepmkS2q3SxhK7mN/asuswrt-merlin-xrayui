@@ -180,16 +180,16 @@ describe('HysteriaParser', () => {
     });
   });
 
-  describe('Salamander obfuscation (udpmasks)', () => {
+  describe('Salamander obfuscation (finalmask)', () => {
     it('parses salamander obfuscation with obfs-password', () => {
       const url = 'hysteria2://pass@server.com:443?obfs=salamander&obfs-password=secret#proxy';
       const parsed = new XrayParsedUrlObject(url);
       const result = HysteriaParser(parsed);
 
-      expect(result?.streamSettings?.udpmasks).toBeDefined();
-      expect(result?.streamSettings?.udpmasks?.length).toBe(1);
-      expect(result?.streamSettings?.udpmasks?.[0].type).toBe('salamander');
-      expect(result?.streamSettings?.udpmasks?.[0].settings?.password).toBe('secret');
+      expect(result?.streamSettings?.finalmask?.udp).toBeDefined();
+      expect(result?.streamSettings?.finalmask?.udp?.length).toBe(1);
+      expect(result?.streamSettings?.finalmask?.udp?.[0].type).toBe('salamander');
+      expect(result?.streamSettings?.finalmask?.udp?.[0].settings?.password).toBe('secret');
     });
 
     it('parses salamander obfuscation with obfsPassword', () => {
@@ -197,42 +197,44 @@ describe('HysteriaParser', () => {
       const parsed = new XrayParsedUrlObject(url);
       const result = HysteriaParser(parsed);
 
-      expect(result?.streamSettings?.udpmasks?.[0].settings?.password).toBe('secret');
+      expect(result?.streamSettings?.finalmask?.udp?.[0].settings?.password).toBe('secret');
     });
 
-    it('does not set udpmasks when obfs is not salamander', () => {
+    it('does not set finalmask when obfs is not salamander', () => {
       const url = 'hy2://pass@server.com:443?obfs=other&obfs-password=secret#proxy';
       const parsed = new XrayParsedUrlObject(url);
       const result = HysteriaParser(parsed);
 
-      expect(result?.streamSettings?.udpmasks).toBeUndefined();
+      expect(result?.streamSettings?.finalmask).toBeUndefined();
     });
 
-    it('does not set udpmasks when obfs-password is missing', () => {
+    it('does not set finalmask when obfs-password is missing', () => {
       const url = 'hy2://pass@server.com:443?obfs=salamander#proxy';
       const parsed = new XrayParsedUrlObject(url);
       const result = HysteriaParser(parsed);
 
-      expect(result?.streamSettings?.udpmasks).toBeUndefined();
+      expect(result?.streamSettings?.finalmask).toBeUndefined();
     });
 
-    it('produces correct JSON structure for Xray-core udpmasks', () => {
+    it('produces correct JSON structure for Xray-core finalmask', () => {
       const url = 'hy2://pass@server.com:443?obfs=salamander&obfs-password=mypass#proxy';
       const parsed = new XrayParsedUrlObject(url);
       const result = HysteriaParser(parsed);
 
-      const udpmasks = result?.streamSettings?.udpmasks;
-      expect(udpmasks).toBeDefined();
+      const finalmask = result?.streamSettings?.finalmask;
+      expect(finalmask?.udp).toBeDefined();
 
-      const json = JSON.parse(JSON.stringify(udpmasks));
-      expect(json).toEqual([
-        {
-          type: 'salamander',
-          settings: {
-            password: 'mypass'
+      const json = JSON.parse(JSON.stringify(finalmask));
+      expect(json).toEqual({
+        udp: [
+          {
+            type: 'salamander',
+            settings: {
+              password: 'mypass'
+            }
           }
-        }
-      ]);
+        ]
+      });
     });
   });
 
@@ -260,8 +262,8 @@ describe('HysteriaParser', () => {
       expect(result?.streamSettings?.tlsSettings?.allowInsecure).toBe(true);
       expect(result?.streamSettings?.tlsSettings?.alpn).toEqual(['h3']);
 
-      expect(result?.streamSettings?.udpmasks?.[0].type).toBe('salamander');
-      expect(result?.streamSettings?.udpmasks?.[0].settings?.password).toBe('obfspass');
+      expect(result?.streamSettings?.finalmask?.udp?.[0].type).toBe('salamander');
+      expect(result?.streamSettings?.finalmask?.udp?.[0].settings?.password).toBe('obfspass');
     });
   });
 });

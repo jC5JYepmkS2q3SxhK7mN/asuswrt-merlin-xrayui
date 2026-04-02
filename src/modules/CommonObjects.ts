@@ -10,7 +10,7 @@ import {
   XrayStreamHttpUpgradeSettingsObject,
   XrayStreamSplitHttpSettingsObject,
   XrayStreamHysteriaSettingsObject,
-  XrayFinalMaskObject
+  XrayFinalMaskSettingsObject
 } from './TransportObjects';
 
 export const isObjectEmpty = (obj: any): boolean => {
@@ -350,6 +350,7 @@ export class XrayRoutingObject {
   public domainMatcher? = 'hybrid';
   public rules?: XrayRoutingRuleObject[] = [];
   public disabled_rules?: XrayRoutingRuleObject[] = [];
+  public balancers?: XrayBalancerObject[] = [];
   public policies?: XrayRoutingPolicy[] = [];
 
   public normalize(): this {
@@ -360,6 +361,15 @@ export class XrayRoutingObject {
       this.policies.forEach((policy) => {
         policy.normalize();
       });
+    }
+
+    if (Array.isArray(this.balancers) && this.balancers.length) {
+      this.balancers = this.balancers
+        .map((b) => b.normalize())
+        .filter((b): b is XrayBalancerObject => b !== undefined);
+      if (!this.balancers.length) this.balancers = undefined;
+    } else {
+      this.balancers = undefined;
     }
 
     if (this.disabled_rules && this.disabled_rules.length > 0) {
@@ -552,6 +562,30 @@ export class XrayRoutingPolicy {
   };
 }
 
+export class XrayBalancerStrategyObject {
+  static readonly typeOptions = ['random', 'roundRobin', 'leastPing', 'leastLoad'];
+  public type?: string = 'random';
+
+  public normalize(): this | undefined {
+    if (!this.type || this.type === 'random') return undefined;
+    return this;
+  }
+}
+
+export class XrayBalancerObject {
+  public tag?: string;
+  public selector?: string[] = [];
+  public fallbackTag?: string;
+  public strategy?: XrayBalancerStrategyObject = new XrayBalancerStrategyObject();
+
+  public normalize(): this | undefined {
+    if (!this.tag || !this.selector?.length) return undefined;
+    this.fallbackTag = this.fallbackTag || undefined;
+    this.strategy = this.strategy?.normalize?.() ?? undefined;
+    return this;
+  }
+}
+
 export class XrayRoutingRuleObject {
   static readonly sysMetricsRuleName = 'sys:metrics';
   static readonly networkOptions = ['', 'tcp', 'udp', 'tcp,udp'];
@@ -571,6 +605,7 @@ export class XrayRoutingRuleObject {
   public protocol?: string[] = [];
   public inboundTag?: string[] = [];
   public outboundTag?: string;
+  public balancerTag?: string;
   public user?: string[] = [];
   public attrs?: unknown;
 
@@ -587,7 +622,10 @@ export class XrayRoutingRuleObject {
     this.port = this.port == '' ? undefined : this.port;
     this.sourcePort = this.sourcePort == '' ? undefined : this.sourcePort;
     this.outboundTag = this.outboundTag == '' ? undefined : this.outboundTag;
+    this.balancerTag = this.balancerTag == '' ? undefined : this.balancerTag;
     this.network = this.network == '' ? undefined : this.network;
+    // outboundTag and balancerTag are mutually exclusive
+    if (this.balancerTag) this.outboundTag = undefined;
   }
 
   public isSystem = (): boolean => {
@@ -626,7 +664,7 @@ export class XrayStreamSettingsObject {
   public httpupgradeSettings?: XrayStreamHttpUpgradeSettingsObject;
   public splithttpSettings?: XrayStreamSplitHttpSettingsObject;
   public hysteriaSettings?: XrayStreamHysteriaSettingsObject;
-  public udpmasks?: XrayFinalMaskObject[];
+  public finalmask?: XrayFinalMaskSettingsObject;
   public sockopt?: XraySockoptObject;
 
   public normalize(): this | undefined {
@@ -643,13 +681,8 @@ export class XrayStreamSettingsObject {
 
     if (this.normalizeAllSettings) this.normalizeAllSettings();
 
-    if (this.udpmasks && this.udpmasks.length > 0) {
-      this.udpmasks = this.udpmasks
-        .map((mask) => (typeof mask.normalize === 'function' ? mask.normalize() : mask))
-        .filter((mask): mask is XrayFinalMaskObject => mask !== undefined);
-      if (this.udpmasks.length === 0) this.udpmasks = undefined;
-    } else {
-      this.udpmasks = undefined;
+    if (this.finalmask && typeof this.finalmask.normalize === 'function') {
+      this.finalmask = this.finalmask.normalize();
     }
 
     if (this.sockopt && typeof this.sockopt.normalize === 'function') this.sockopt = this.sockopt.normalize();

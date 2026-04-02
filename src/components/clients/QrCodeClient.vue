@@ -45,6 +45,8 @@
     password?: string;
     method?: string;
     email?: string;
+    // Hysteria specific
+    auth?: string;
   }
 
   interface Proxy {
@@ -56,9 +58,21 @@
       password?: string;
     };
     streamSettings?: {
+      network?: string;
       security?: string;
       realitySettings?: XrayStreamRealitySettingsObject;
       tlsSettings?: XrayStreamTlsSettingsObject;
+      hysteriaSettings?: {
+        congestion?: string;
+        up?: string;
+        down?: string;
+      };
+      finalmask?: {
+        udp?: Array<{
+          type?: string;
+          settings?: { password?: string };
+        }>;
+      };
     };
   }
 
@@ -118,6 +132,38 @@
           return `ss://${base64UserInfo}@${address}:${p.port}#${encodeURIComponent(remark)}`;
         }
 
+        // Handle Hysteria2 protocol
+        if (p.protocol === 'hysteria') {
+          const auth = props.client.auth || '';
+          const queryParams = Array<{ key: string; value: string }>();
+          const addParam = (key: string, value: string | undefined) => {
+            if (value) queryParams.push({ key, value });
+          };
+
+          if (p.streamSettings?.tlsSettings?.serverName) {
+            addParam('sni', p.streamSettings.tlsSettings.serverName);
+          }
+          if (p.streamSettings?.tlsSettings?.allowInsecure) {
+            addParam('insecure', '1');
+          }
+          if (p.streamSettings?.tlsSettings?.alpn?.length) {
+            addParam('alpn', p.streamSettings.tlsSettings.alpn.join(','));
+          }
+          if (p.streamSettings?.tlsSettings?.pinnedPeerCertificateSha256?.length) {
+            addParam('pinSHA256', p.streamSettings.tlsSettings.pinnedPeerCertificateSha256.join(','));
+          }
+
+          const obfsMask = p.streamSettings?.finalmask?.udp?.[0];
+          if (obfsMask?.type === 'salamander' && obfsMask.settings?.password) {
+            addParam('obfs', 'salamander');
+            addParam('obfs-password', obfsMask.settings.password);
+          }
+
+          const queryString = queryParams.map((param) => `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`).join('&');
+          const qs = queryString ? `?${queryString}` : '';
+          return `hy2://${encodeURIComponent(auth)}@${address}:${p.port}${qs}#${encodeURIComponent(remark)}`;
+        }
+
         // Handle VLESS/VMESS protocols
         const serverAddress = `${address}:${p.port}`;
         const security = p.streamSettings?.realitySettings ? 'reality' : p.streamSettings?.tlsSettings ? 'tls' : 'none';
@@ -129,7 +175,7 @@
 
         addQueryParam('security', security);
         addQueryParam('flow', props.client.flow ?? XrayOptions.clientFlowOptions[1]);
-        addQueryParam('type', 'tcp');
+        addQueryParam('type', p.streamSettings?.network || 'tcp');
 
         if (security === 'reality' && p.streamSettings?.realitySettings) {
           addQueryParam('sni', p.streamSettings.realitySettings.serverNames?.[0]!);
@@ -158,7 +204,7 @@
         const p = props.proxy;
 
         // For VLESS/VMESS, ensure that security is set properly
-        if (p.protocol !== 'shadowsocks') {
+        if (p.protocol !== 'shadowsocks' && p.protocol !== 'hysteria') {
           if (!p.streamSettings?.security || p.streamSettings.security === 'none') {
             alert('Please set security to tls or reality before generating QR code');
             return;

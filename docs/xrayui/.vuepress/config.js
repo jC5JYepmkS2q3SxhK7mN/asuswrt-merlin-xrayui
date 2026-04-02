@@ -49,7 +49,7 @@ export default defineUserConfig({
     '/ru/': { lang: 'ru-RU', title: 'XrayUI', description: '' }
   },
   theme: defaultTheme({
-    sidebarDepth: 6,
+    sidebarDepth: 2,
     logo: '/images/logo.png',
     locales: {
       '/': {
@@ -110,6 +110,11 @@ export default defineUserConfig({
       }
     }
   }),
+  markdown: {
+    headers: {
+      level: [2, 3]
+    }
+  },
   bundler: viteBundler(),
   plugins: [markdownHintPlugin({ hint: true, alert: true }), removeHtmlExtensionPlugin()]
 });

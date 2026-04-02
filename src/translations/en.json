@@ -104,6 +104,8 @@
       "tab_dns": "DNS",
       "label_dns_leak": "Prevent DNS leaks",
       "hint_dns_leak": "Enable this option to prevent DNS leaks.<blockquote>**Important!** Do not turn this option `on` without proper xray configuration. Click help next to the checkbox to learn more about DNS leaks and how to configure them properly.</blockquote>",
+      "label_block_quic": "Block QUIC",
+      "hint_block_quic": "Block QUIC (UDP 443) to prevent native IP address leaks. When enabled, clients will fall back to TCP HTTPS which is properly proxied through Xray.",
       "label_logs_scribe": "Integrate XRAYUI logs with Scribe",
       "hint_logs_scribe": "Enabling this option will integrate XRAYUI logs with `Scribe`. This allows you to view XRAYUI logs in the `Scribe` web interface in a dedicated window.<hr/>You can install `Scribe` from the `AMTM`",
       "label_subscription_auto_refresh": "Auto-refresh subscriptions",
@@ -195,7 +197,27 @@
       "hint_policies": "Configure per-device routing policies (bypass or redirect) for Xray. You can specify MAC addresses, modes (`bypass` or `redirect`), and ports to fine-tune how traffic is handled.",
       "hint_rules": "An array corresponding to a list of rules. For each connection, the routing will judge these rules from top to bottom in order. When it encounters the first effective rule, it will forward the connection to the outboundTag or balancerTag specified by the rule. <blockquote>When no rules match, the traffic is sent out by the first outbound by default.</blockquote>",
       "hint_geodat_metadata": "Update the GeoIP and GeoSite metadata files. This operation will take some time, please be patient.",
-      "hint_ports_policy": "By default, the mode `redirect` is used, meaning that traffic on all ports is redirected to the inbound port of xray. Specify any additional ports that should be routed through or bypass Xray. <ul> <li><strong>redirect</strong>: Traffic on all ports is redirected to the inbound port. You define the ports that should NOT be redirected to Xray.</li> <li><strong>bypass</strong>: Traffic on all ports bypasses Xray. You define the ports that should be explicitly redirected to Xray.</li> </ul>"
+      "hint_ports_policy": "By default, the mode `redirect` is used, meaning that traffic on all ports is redirected to the inbound port of xray. Specify any additional ports that should be routed through or bypass Xray. <ul> <li><strong>redirect</strong>: Traffic on all ports is redirected to the inbound port. You define the ports that should NOT be redirected to Xray.</li> <li><strong>bypass</strong>: Traffic on all ports bypasses Xray. You define the ports that should be explicitly redirected to Xray.</li> </ul>",
+      "label_balancers": "Balancers",
+      "hint_balancers": "Load balancers distribute traffic across multiple outbounds. When a balancer takes effect, it selects the most suitable outbound from the specified outbounds according to the configured strategy."
+    },
+    "BalancerModal": {
+      "modal_title": "Manage Balancers",
+      "modal_title2": "Balancer List",
+      "modal_edit_title": "Balancer",
+      "balancer_no": "balancer #{0}",
+      "no_balancers_defined": "No balancers defined",
+      "label_tag": "Tag",
+      "hint_tag": "The identifier of this load balancer, used to match <strong>balancerTag</strong> in routing rules.",
+      "label_strategy": "Strategy",
+      "hint_strategy": "The load balancing strategy.<ul><li><strong>random</strong>: Randomly selects a matched outbound proxy. (Default)</li><li><strong>roundRobin</strong>: Selects matched outbound proxies in order.</li><li><strong>leastPing</strong>: Selects the outbound with the lowest latency. Requires observatory or burstObservatory.</li><li><strong>leastLoad</strong>: Selects the most stable outbound. Requires observatory or burstObservatory.</li></ul>",
+      "label_selector": "Selectors",
+      "hint_selector": "An array of strings used for <strong>prefix matching</strong> against outbound tags. For example, if you have outbounds <code>[\"us-1\", \"us-2\", \"eu-1\"]</code>, selector <code>us-</code> will match <code>[\"us-1\", \"us-2\"]</code>.<br/>Enter one selector per line.",
+      "placeholder_selector": "Enter outbound tag prefixes, one per line\ne.g.\nproxy-\nus-",
+      "label_fallback_tag": "Fallback outbound",
+      "hint_fallback_tag": "If all outbounds selected by this balancer are unavailable, traffic will be sent to this fallback outbound.<br/><strong>Note:</strong> Requires observatory or burstObservatory configuration.",
+      "label_matching": "Matching outbounds",
+      "none": "(none)"
     },
     "PolicyModal": {
       "modal_title2": "Policy List",
@@ -250,7 +272,14 @@
       "hint_target_ips": "An array where each item represents an IP range. This rule will take effect when the target IP matches any of the IP ranges in the array.",
       "hint_target_ports": "The target port range, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li><li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>",
       "hint_source_ips": "An array where each item represents an IP range in the format of IP, CIDR, GeoIP, or loading IP from a file. This rule will take effect when the source IP matches any of the IP ranges in the array.",
-      "hint_source_ports": "The source port, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li> <li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>"
+      "hint_source_ports": "The source port, which can take on three forms:<ul><li>`a-b`: a and b are both positive integers less than `65536`. This range is a closed interval, and this rule will take effect when the target port falls within this range.</li> <li>`a`: a is a positive integer less than `65536`. This rule will take effect when the target port is a.</li><li>A mixture of the above two forms, separated by commas, For example: `53,443,1000-2000`.</li></ul>",
+      "label_target_type": "Target type",
+      "hint_target_type": "Choose whether this rule routes to a specific outbound or to a load balancer.",
+      "target_outbound": "Outbound",
+      "target_balancer": "Balancer",
+      "label_balancer_tag": "Balancer",
+      "hint_balancer_tag": "The tag of the balancer. This rule will forward matched traffic to the specified load balancer.",
+      "no_balancers": "No balancers defined. Add balancers in the Routing section first."
     },
     "Inbounds": {
       "title": "Inbounds",
@@ -586,6 +615,10 @@
       "hint_address": "Server address, pointing to the Hysteria server, supporting domain names, `IPv4` and `IPv6`.",
       "hint_port": "Server port, usually the same as the port listened by the Hysteria server."
     },
+    "HysteriaInbound": {
+      "modal_title": "Hysteria Inbound",
+      "modal_desc": "Hysteria inbound accepts connections from Hysteria clients. It uses a custom QUIC-based protocol optimized for lossy and unstable connections."
+    },
     "CertificatesModal": {
       "modal_title": "Manage TLS Certificate",
       "label_ocsp_stapling": "OCSP stapling",
@@ -674,7 +707,8 @@
       "clear_all_confirm": "Are you sure you want to clear all the backups?",
       "restore_confirm": "Are you sure  you want to restore this backup?\nWarning: This will overwrite the current configuration.\n\nIt is recommended to create a backup before restoring.",
       "download": "download",
-      "restore": "restore"
+      "restore": "restore",
+      "name_placeholder": "Custom name (optional)"
     },
     "Logs": {
       "title": "Xray Logs",
@@ -709,11 +743,39 @@
       "hint_udphop_port": "Port range for UDP hopping (e.g., `20000-50000`). Packets will hop between ports in this range.",
       "label_udphop_interval": "Hop Interval",
       "hint_udphop_interval": "Time interval in seconds between port hops. Default is 30 seconds.",
-      "salamander_title": "Salamander Obfuscation",
-      "label_salamander_enabled": "Enable Salamander",
-      "hint_salamander_enabled": "Salamander is a UDP masking/obfuscation protocol that disguises Hysteria traffic characteristics to avoid detection.",
-      "label_salamander_password": "Obfuscation Password",
-      "hint_salamander_password": "Password for Salamander obfuscation. This must match the server configuration."
+      "label_finalmask_enabled": "Enable Finalmask",
+      "hint_finalmask_enabled": "Finalmask is a UDP masking/obfuscation layer that disguises traffic characteristics to avoid detection.",
+      "label_finalmask_type": "Mask Type",
+      "hint_finalmask_type": "Type of finalmask obfuscation. <ul><li>`salamander`: simple password-based UDP obfuscation</li><li>`sudoku`: byte-appearance transformation with configurable encoding</li></ul>",
+      "label_finalmask_password": "Password",
+      "hint_finalmask_password": "Shared secret for obfuscation. Must match the server configuration.",
+      "label_finalmask_domain": "Domain",
+      "hint_finalmask_domain": "Domain name for Finalmask obfuscation (e.g., `t.example.com`). Must match the server configuration.",
+      "label_sudoku_ascii": "ASCII Mode",
+      "hint_sudoku_ascii": "Controls byte appearance. `prefer_entropy` produces high-entropy output. `prefer_ascii` produces printable ASCII-like output.",
+      "label_sudoku_padding_min": "Padding Min (%)",
+      "hint_sudoku_padding": "Padding percentage (0-100). Adds random padding to disguise packet lengths.",
+      "label_sudoku_padding_max": "Padding Max (%)",
+      "label_sudoku_custom_tables": "Custom Tables",
+      "hint_sudoku_custom_tables": "Custom byte-layout patterns for entropy mode. Each pattern is 8 characters: exactly 2 `x`, 2 `p`, and 4 `v` (e.g., `xpxvvpvv`).",
+      "label_udp_idle_timeout": "UDP Idle Timeout",
+      "hint_udp_idle_timeout": "Idle wait time in seconds for a single QUIC native UDP connection. Default is 60 seconds.",
+      "label_masquerade_enabled": "Enable Masquerade",
+      "hint_masquerade_enabled": "HTTP/3 page masquerading. When enabled, the server will serve a fake page to non-Hysteria clients to disguise the service.",
+      "label_masquerade_type": "Masquerade Type",
+      "hint_masquerade_type": "Type of masquerade response. <ul><li>`file`: serve files from a directory</li><li>`proxy`: reverse proxy to another URL</li><li>`string`: return a custom string</li></ul>",
+      "label_masquerade_dir": "Directory",
+      "hint_masquerade_dir": "Directory to serve files from when masquerade type is `file`.",
+      "label_masquerade_url": "Proxy URL",
+      "hint_masquerade_url": "URL to reverse proxy to when masquerade type is `proxy`.",
+      "label_masquerade_rewrite_host": "Rewrite Host",
+      "hint_masquerade_rewrite_host": "Whether to rewrite the Host header when proxying requests.",
+      "label_masquerade_insecure": "Insecure",
+      "hint_masquerade_insecure": "Allow insecure TLS connections to the proxy target.",
+      "label_masquerade_content": "Content",
+      "hint_masquerade_content": "Custom string content to return when masquerade type is `string`.",
+      "label_masquerade_status_code": "Status Code",
+      "hint_masquerade_status_code": "HTTP status code to return when masquerade type is `string`."
     },
     "SockOpt": {
       "label": "Transparent Proxy Settings",

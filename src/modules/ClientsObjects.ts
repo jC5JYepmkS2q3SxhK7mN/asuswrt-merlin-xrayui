@@ -47,6 +47,15 @@ export class XrayTrojanClientObject implements IClient {
   normalize = () => void 0;
 }
 
+export class XrayHysteriaClientObject implements IClient {
+  public auth!: string;
+  public email?: string;
+  normalize = (): this => {
+    this.email = this.email === '' ? undefined : this.email;
+    return this;
+  };
+}
+
 export class XrayVlessClientObject implements IClient {
   public id!: string;
   public email?: string;
