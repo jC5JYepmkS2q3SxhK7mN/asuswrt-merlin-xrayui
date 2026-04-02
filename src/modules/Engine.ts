@@ -40,7 +40,8 @@ import {
   XrayReverseItem,
   XrayDnsServerObject,
   XrayFakeDnsObject,
-  XrayBalancerObject
+  XrayBalancerObject,
+  XrayBalancerStrategyObject
 } from './CommonObjects';
 import { plainToInstance } from 'class-transformer';
 import {
@@ -65,7 +66,8 @@ import {
   XrayStreamTcpSettingsObject,
   XrayStreamWsSettingsObject,
   XrayFinalMaskObject,
-  XrayFinalMaskSettingsObject
+  XrayFinalMaskSettingsObject,
+  XrayStreamSplitHttpSettingsObject
 } from './TransportObjects';
 import { XrayProtocol } from './Options';
 
@@ -627,6 +629,9 @@ export class Engine {
         deserializeArray(this.xrayConfig.routing.rules, XrayRoutingRuleObject);
         deserializeArray(this.xrayConfig.routing.disabled_rules, XrayRoutingRuleObject);
         deserializeArray(this.xrayConfig.routing.balancers, XrayBalancerObject);
+        this.xrayConfig.routing.balancers?.forEach((b) => {
+          if (b.strategy) b.strategy = plainToInstance(XrayBalancerStrategyObject, b.strategy);
+        });
       }
 
       if (config.dns) {
@@ -700,6 +705,7 @@ const streamSettingsFieldMap: [keyof XrayStreamSettingsObject, new () => any][] 
   ['httpupgradeSettings', XrayStreamHttpUpgradeSettingsObject],
   ['grpcSettings', XrayStreamGrpcSettingsObject],
   ['xhttpSettings', XrayStreamHttpSettingsObject],
+  ['splithttpSettings', XrayStreamSplitHttpSettingsObject],
   ['hysteriaSettings', XrayStreamHysteriaSettingsObject]
 ];
 
