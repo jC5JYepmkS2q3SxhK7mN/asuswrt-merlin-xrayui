@@ -26,7 +26,10 @@
           </tbody>
         </table>
         <template v-slot:footer>
-          <input class="button_gen button_gen_small" type="button" :value="$t('com.Backup.backup')" @click.prevent="create_backup()" />
+          <span class="backup-create-row">
+            <input type="text" class="input_text" v-model="backupName" :placeholder="$t('com.Backup.name_placeholder')" maxlength="50" style="width: 200px; margin-right: 5px" />
+            <input class="button_gen button_gen_small" type="button" :value="$t('com.Backup.backup')" @click.prevent="create_backup()" />
+          </span>
           <input class="button_gen button_gen_small" type="button" :value="$t('com.Backup.clear')" @click.prevent="clear()" v-if="backups.length" />
         </template>
       </modal>
@@ -50,6 +53,7 @@
       const { t } = useI18n();
       const modal = ref();
       const backups = ref<string[]>([]);
+      const backupName = ref('');
       const uiResponse = inject<Ref<EngineResponseConfig>>('uiResponse')!;
 
       const restore = async (backup: string) => {
@@ -67,9 +71,11 @@
       };
 
       const create_backup = async () => {
+        const name = backupName.value.trim();
         await engine.executeWithLoadingProgress(async () => {
-          await engine.submit(SubmitActions.createBackup, null, 2000);
+          await engine.submit(SubmitActions.createBackup, name ? { name } : null, 2000);
         });
+        backupName.value = '';
       };
       const clear = async (backup?: string) => {
         let backup_payload = null;
@@ -92,6 +98,7 @@
 
       return {
         backups,
+        backupName,
         modal,
         create_backup,
         clear,

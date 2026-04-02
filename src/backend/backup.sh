@@ -33,7 +33,18 @@ backup_configuration() {
     mkdir -p "$backup_dir"
 
     local timestamp=$(date +%Y%m%d-%H%M%S)
-    local backup_file="$backup_dir/xrayui-$timestamp.tar.gz"
+
+    local payload=$(reconstruct_payload)
+    local custom_name=$(echo "$payload" | jq -r '.name // empty')
+    # Sanitize: keep only alphanumeric, hyphens, underscores; truncate to 50 chars
+    custom_name=$(echo "$custom_name" | sed 's/[^a-zA-Z0-9_-]/-/g; s/--*/-/g; s/^-//; s/-$//' | cut -c1-50)
+
+    local backup_file
+    if [ -n "$custom_name" ]; then
+        backup_file="$backup_dir/xrayui-${timestamp}-${custom_name}.tar.gz"
+    else
+        backup_file="$backup_dir/xrayui-$timestamp.tar.gz"
+    fi
 
     local items_list=""
     for item in /opt/etc/xray/*.json /opt/etc/xray/xrayui/* /opt/etc/xray/cert /jffs/xrayui_custom /opt/share/xrayui/data /opt/etc/xrayui.conf; do
