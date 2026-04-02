@@ -6,6 +6,8 @@
 
 - FIXED: Wireguard outbound used incorrect field name `privateKey` instead of `secretKey`, causing Xray-core to reject the configuration.
 - FIXED: VLESS inbound clients with `flow: "none"` (e.g. when using XHTTP transport) were not normalized before saving, causing Xray-core to reject the configuration with _"flow doesn't support none in this version"_.
+- FIXED: `IPv6` traffic could bypass the proxy in some cases due to a missing firewall rule.
+- ADDED: `Block QUIC` option in General Settings > DNS to prevent IP address leaks through QUIC protocol.
 
 ## [0.65.0] - 2026-02-22
 

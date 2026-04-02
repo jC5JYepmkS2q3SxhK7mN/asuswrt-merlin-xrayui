@@ -100,7 +100,9 @@
       "button_subscription_fetch": "获取",
       "tab_dns": "DNS",
       "label_dns_leak": "防止 DNS 泄漏",
-      "hint_dns_leak": "启用此选项以防止 DNS 泄漏。<blockquote>**重要！** 在未正确配置 Xray 之前，请不要将此选项设置为 `on`。单击复选框旁的“帮助”以了解有关 DNS 泄漏及其正确配置的更多信息。</blockquote>",
+      "hint_dns_leak": "启用此选项以防止 DNS 泄漏。<blockquote>**重要！** 在未正确配置 Xray 之前，请不要将此选项设置为 `on`。单击复选框旁的\"帮助\"以了解有关 DNS 泄漏及其正确配置的更多信息。</blockquote>",
+      "label_block_quic": "阻止 QUIC",
+      "hint_block_quic": "阻止 QUIC（UDP 443）以防止 IP 地址泄漏。启用后，客户端将回退到 TCP HTTPS，该协议可通过 Xray 正确代理。",
       "label_logs_scribe": "将 XRAYUI 日志集成到 Scribe",
       "hint_logs_scribe": "启用此选项将 XRAYUI 日志与 `Scribe` 集成。这允许您在 `Scribe` 的 Web 界面中专用窗口查看 XRAYUI 日志。<hr/>您可以通过 `AMTM` 安装 `Scribe`",
       "label_subscription_auto_refresh": "自动刷新订阅",
@@ -112,7 +114,7 @@
       "hint_subscription_auto_fallback": "启用后，开启了自动故障转移的出站将定期检查，当前端点不可达时自动切换到可用端点。",
       "label_subscription_fallback_interval": "健康检查间隔",
       "hint_subscription_fallback_interval": "检查池管理出站健康状态的频率。",
-      "warn_auto_fallback_requires_observatory": "需要在「通用」选项卡中启用 Xray 连接检查。",
+      "warn_auto_fallback_requires_observatory": "需要在\"通用\"选项卡中启用 Xray 连接检查。",
       "label_subscription_filters": "轮换过滤器",
       "hint_subscription_filters": "按名称过滤用于自动故障转移轮换的订阅链接。<hr/>输入逗号分隔的关键词（例如 <code>Canada, Denmark</code>）。<hr/>仅使用名称包含至少一个关键词的链接。<hr/>如果为空，则使用完整的订阅池。",
       "placeholder_subscription_filters": "例如 Canada, Denmark, Japan"
@@ -406,7 +408,7 @@
       "label_path": "HTTP 路径",
       "label_host": "Host",
       "hint_accept_proxy_protocol": "是否接受 PROXY 协议（用于传输真实源 IP 和端口）。<br />不熟悉时保持默认。<br />常见反向代理（如 HAProxy、NGINX）和 VLESS fallback xver 可配置发送 PROXY 协议。<br /> 启用后，TCP 连接建立后下游需先发送 PROXY v1/v2 格式的源 IP / 端口，否则终止连接。",
-      "hint_path": "HTTPUpgrade 连接使用的路径，默认值 `/`. <br />若路径包含ED查询参数（如： `/mypath?ed=2560`），将启用 “早期数据” 降低延迟，数值为首包大小阈值，超阈值时不启用，推荐值 `2560`。",
+      "hint_path": "HTTPUpgrade 连接使用的路径，默认值 `/`. <br />若路径包含ED查询参数（如： `/mypath?ed=2560`），将启用 \"早期数据\" 降低延迟，数值为首包大小阈值，超阈值时不启用，推荐值 `2560`。",
       "hint_host": "HTTPUpgrade 连接发送的 HTTP Host，默认空。<hr /> 服务器为空时不验证客户端 Host 头；若已定义则验证匹配。<hr /> 客户端 Host 头优先级：`host` > `headers` > `address`"
     },
     "HeadersMapping": {
@@ -479,7 +481,7 @@
       "label_port": "目标端口",
       "label_network": "网络协议",
       "label_follow_redirect": "跟随重定向",
-      "hint_address": "将流量转发到此地址。可以是一个 IP 地址，形如 `1.2.3.4`，或者一个域名，形如 `xray.com`。字符串类型。<hr/>启用「跟随重定向」时地址可为空。",
+      "hint_address": "将流量转发到此地址。可以是一个 IP 地址，形如 `1.2.3.4`，或者一个域名，形如 `xray.com`。字符串类型。<hr/>启用\"跟随重定向\"时地址可为空。",
       "hint_port": "将流量转发到目标地址的指定端口，范围 [1, 65535]，数值类型。**必填** ",
       "hint_network": "可接收的网络协议类型。比如当指定为 `tcp` 时，仅会接收 TCP 流量。默认值为 `tcp`。",
       "hint_follow_redirect": "启用时，dokodemo-door 会识别出由 iptables 转发而来的数据，并转发到相应的目标地址。详见传输配置中的tproxy设置。"

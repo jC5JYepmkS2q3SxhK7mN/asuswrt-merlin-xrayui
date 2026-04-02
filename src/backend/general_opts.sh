@@ -40,6 +40,7 @@ apply_general_options() {
     local hooks=$(echo "$genopts" | jq -c '.hooks // {}')
     local subscriptionLinks=$(echo "$genopts" | jq -r '(.subscriptions.links // []) | join("|")')
     local xray_dns_only=$(echo "$genopts" | jq -r '.dns_only // "false"')
+    local xray_block_quic=$(echo "$genopts" | jq -r '.block_quic // "false"')
     local integration_scribe=$(echo "$genopts" | jq -r '.logs_scribe // "false"')
     local subscription_auto_refresh=$(echo "$genopts" | jq -r '.subscription_auto_refresh // "disabled"')
     local subscription_auto_fallback=$(echo "$genopts" | jq -r '.subscription_auto_fallback // "false"')
@@ -94,6 +95,7 @@ apply_general_options() {
     update_xrayui_config "xray_sleep_time" "$xray_sleep_time"
     update_xrayui_config "subscriptionLinks" "$subscriptionLinks"
     update_xrayui_config "xray_dns_only" "$xray_dns_only"
+    update_xrayui_config "xray_block_quic" "$xray_block_quic"
     update_xrayui_config "integration_scribe" "$integration_scribe"
     update_xrayui_config "subscription_auto_refresh" "$subscription_auto_refresh"
     update_xrayui_config "subscription_auto_fallback" "$subscription_auto_fallback"

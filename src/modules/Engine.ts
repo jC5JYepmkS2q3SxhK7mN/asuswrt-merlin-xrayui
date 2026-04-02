@@ -166,6 +166,7 @@ export class EngineResponseConfig {
     hooks?: EngineHooks;
     subscriptions?: EngineSubscriptions;
     dns_only?: boolean;
+    block_quic?: boolean;
     logs_scribe?: boolean;
     subscription_auto_refresh?: string;
     subscription_auto_fallback?: boolean;

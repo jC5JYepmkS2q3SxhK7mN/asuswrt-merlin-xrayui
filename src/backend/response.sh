@@ -39,6 +39,7 @@ initial_response() {
     local xray_sleep_time="${xray_sleep_time:-10}"
     local subscriptionLinks="${subscriptionLinks:-""}"
     local xray_dns_only="${xray_dns_only:-false}"
+    local xray_block_quic="${xray_block_quic:-false}"
     local integration_scribe="${integration_scribe:-false}"
     local subscription_auto_refresh="${subscription_auto_refresh:-disabled}"
     local subscription_auto_fallback="${subscription_auto_fallback:-false}"
@@ -86,6 +87,7 @@ initial_response() {
     UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson sleep_time "$xray_sleep_time" '.xray.sleep_time = $sleep_time')
     UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg subscriptionLinks "$subscriptionLinks" '.xray.subscriptions.links = (if $subscriptionLinks == "" then [] else ($subscriptionLinks | split("|")) end)')
     UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson xray_dns_only "$xray_dns_only" '.xray.dns_only = $xray_dns_only')
+    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson xray_block_quic "$xray_block_quic" '.xray.block_quic = $xray_block_quic')
     UI_RESPONSE=$(echo "$UI_RESPONSE" | jq \
         --arg sar "$subscription_auto_refresh" \
         --arg saf "$subscription_auto_fallback" \

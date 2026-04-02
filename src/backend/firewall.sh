@@ -181,6 +181,11 @@ configure_firewall() {
         if ! iptables -t mangle -C PREROUTING -p tcp -m socket --transparent -j DIVERT 2>/dev/null; then
             iptables -t mangle -I PREROUTING 1 -p tcp -m socket --transparent -j DIVERT
         fi
+        if is_ipv6_enabled; then
+            if ! ip6tables -t mangle -C PREROUTING -p tcp -m socket --transparent -j DIVERT 2>/dev/null; then
+                ip6tables -t mangle -I PREROUTING 1 -p tcp -m socket --transparent -j DIVERT
+            fi
+        fi
     else
         log_warn "xt_socket missing; skipping transparent DIVERT hook"
     fi
@@ -417,10 +422,12 @@ configure_firewall_client() {
             ip6tables -w -t "$IPT_TABLE" -I XRAYUI 2 -m addrtype --dst-type LOCAL -j RETURN
             ip6tables -w -t "$IPT_TABLE" -I XRAYUI 3 -d ff00::/8 -j RETURN
             ip6tables -w -t "$IPT_TABLE" -I XRAYUI 4 -p icmpv6 -j RETURN
+        fi
 
-        #    for net6 in $source_nets_v6; do
-        #        ip6tables -w -t "$IPT_TABLE" -I XRAYUI 1 -d "$net6" -p udp -m multiport --dports 53,546,547 -j RETURN
-        #    done
+        # Block QUIC (UDP 443)
+        if [ "$xray_block_quic" = "true" ]; then
+            log_info "Blocking QUIC (UDP 443) to prevent IP address leak"
+            ipt "$IPT_TABLE" -I XRAYUI 1 -p udp --dport 443 -j REJECT
         fi
     fi
 
