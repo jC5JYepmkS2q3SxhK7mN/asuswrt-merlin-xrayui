@@ -38,7 +38,8 @@ import {
   XrayReverseObject,
   XrayReverseItem,
   XrayDnsServerObject,
-  XrayFakeDnsObject
+  XrayFakeDnsObject,
+  XrayBalancerObject
 } from './CommonObjects';
 import { plainToInstance } from 'class-transformer';
 import {
@@ -698,6 +699,13 @@ export class Engine {
           this.xrayConfig.routing.disabled_rules.forEach((rule, index) => {
             if (this.xrayConfig.routing?.disabled_rules) {
               this.xrayConfig.routing.disabled_rules[index] = plainToInstance(XrayRoutingRuleObject, rule);
+            }
+          });
+        }
+        if (this.xrayConfig.routing.balancers) {
+          this.xrayConfig.routing.balancers.forEach((balancer, index) => {
+            if (this.xrayConfig.routing?.balancers) {
+              this.xrayConfig.routing.balancers[index] = plainToInstance(XrayBalancerObject, balancer);
             }
           });
         }
