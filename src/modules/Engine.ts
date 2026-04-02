@@ -68,6 +68,59 @@ import {
 } from './TransportObjects';
 import { XrayProtocol } from './Options';
 
+// Protocol → settings class mappings for deserialization
+const inboundSettingsMap: Record<string, new () => any> = {
+  [XrayProtocol.DOKODEMODOOR]: XrayDokodemoDoorInboundObject,
+  [XrayProtocol.SOCKS]: XraySocksInboundObject,
+  [XrayProtocol.WIREGUARD]: XrayWireguardInboundObject,
+  [XrayProtocol.VLESS]: XrayVlessInboundObject,
+  [XrayProtocol.VMESS]: XrayVmessInboundObject,
+  [XrayProtocol.SHADOWSOCKS]: XrayShadowsocksInboundObject,
+  [XrayProtocol.HTTP]: XrayHttpInboundObject,
+  [XrayProtocol.TROJAN]: XrayTrojanInboundObject,
+  [XrayProtocol.TUN]: XrayTunInboundObject,
+  [XrayProtocol.HYSTERIA]: XrayHysteriaInboundObject
+};
+
+const outboundSettingsMap: Record<string, new () => any> = {
+  [XrayProtocol.FREEDOM]: XrayFreedomOutboundObject,
+  [XrayProtocol.BLACKHOLE]: XrayBlackholeOutboundObject,
+  [XrayProtocol.SOCKS]: XraySocksOutboundObject,
+  [XrayProtocol.TROJAN]: XrayTrojanOutboundObject,
+  [XrayProtocol.VMESS]: XrayVmessOutboundObject,
+  [XrayProtocol.VLESS]: XrayVlessOutboundObject,
+  [XrayProtocol.WIREGUARD]: XrayWireguardInboundObject,
+  [XrayProtocol.LOOPBACK]: XrayLoopbackOutboundObject,
+  [XrayProtocol.DNS]: XrayDnsOutboundObject,
+  [XrayProtocol.HTTP]: XrayHttpOutboundObject,
+  [XrayProtocol.SHADOWSOCKS]: XrayShadowsocksOutboundObject,
+  [XrayProtocol.HYSTERIA]: XrayHysteriaOutboundObject
+};
+
+function deserializeProxy<T>(proxy: any, settingsMap: Record<string, new () => any>, ProxyClass: new () => T): T {
+  const SettingsClass = settingsMap[proxy.protocol];
+  if (SettingsClass) {
+    proxy = plainToInstance(ProxyClass, proxy);
+    proxy.settings = plainToInstance(SettingsClass, proxy.settings) ?? new SettingsClass();
+  }
+  return proxy;
+}
+
+function deserializeArray<T>(items: any[] | undefined, ItemClass: new () => T): void {
+  items?.forEach((item, index) => {
+    items[index] = plainToInstance(ItemClass, item);
+  });
+}
+
+function deserializeTlsCertificates(proxies: any[]): void {
+  proxies.forEach((proxy) => {
+    if (proxy.streamSettings?.tlsSettings?.certificates) {
+      proxy.streamSettings.tlsSettings.certificates = plainToInstance(XrayStreamTlsSettingsObject, proxy.streamSettings.tlsSettings.certificates);
+      deserializeArray(proxy.streamSettings.tlsSettings.certificates, XrayStreamTlsCertificateObject);
+    }
+  });
+}
+
 export class EngineWireguard {
   public privateKey!: string;
   public publicKey!: string;
@@ -550,225 +603,58 @@ export class Engine {
       }
 
       this.xrayConfig.reverse = plainToInstance(XrayReverseObject, config.reverse);
-      if (this.xrayConfig.reverse?.bridges) {
-        this.xrayConfig.reverse.bridges.forEach((item, index) => {
-          if (this.xrayConfig.reverse?.bridges) {
-            this.xrayConfig.reverse.bridges[index] = plainToInstance(XrayReverseItem, item);
-          }
-        });
-      }
-
-      if (this.xrayConfig.reverse?.portals) {
-        this.xrayConfig.reverse.portals.forEach((item, index) => {
-          if (this.xrayConfig.reverse?.portals) {
-            this.xrayConfig.reverse.portals[index] = plainToInstance(XrayReverseItem, item);
-          }
-        });
-      }
+      deserializeArray(this.xrayConfig.reverse?.bridges, XrayReverseItem);
+      deserializeArray(this.xrayConfig.reverse?.portals, XrayReverseItem);
 
       this.xrayConfig.inbounds.forEach((proxy, index) => {
-        switch (proxy.protocol) {
-          case XrayProtocol.DOKODEMODOOR:
-            proxy = plainToInstance(XrayInboundObject<XrayDokodemoDoorInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayDokodemoDoorInboundObject, proxy.settings) ?? new XrayDokodemoDoorInboundObject();
-            break;
-          case XrayProtocol.SOCKS:
-            proxy = plainToInstance(XrayInboundObject<XraySocksInboundObject>, proxy);
-            proxy.settings = plainToInstance(XraySocksInboundObject, proxy.settings) ?? new XraySocksInboundObject();
-            break;
-          case XrayProtocol.WIREGUARD:
-            proxy = plainToInstance(XrayInboundObject<XrayWireguardInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayWireguardInboundObject, proxy.settings) ?? new XrayWireguardInboundObject();
-            break;
-          case XrayProtocol.VLESS:
-            proxy = plainToInstance(XrayInboundObject<XrayVlessInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayVlessInboundObject, proxy.settings) ?? new XrayVlessInboundObject();
-            break;
-          case XrayProtocol.VMESS:
-            proxy = plainToInstance(XrayInboundObject<XrayVmessInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayVmessInboundObject, proxy.settings) ?? new XrayVmessInboundObject();
-            break;
-          case XrayProtocol.SHADOWSOCKS:
-            proxy = plainToInstance(XrayInboundObject<XrayShadowsocksInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayShadowsocksInboundObject, proxy.settings) ?? new XrayShadowsocksInboundObject();
-            break;
-          case XrayProtocol.HTTP:
-            proxy = plainToInstance(XrayInboundObject<XrayHttpInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayHttpInboundObject, proxy.settings) ?? new XrayHttpInboundObject();
-            break;
-          case XrayProtocol.TROJAN:
-            proxy = plainToInstance(XrayInboundObject<XrayTrojanInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayTrojanInboundObject, proxy.settings) ?? new XrayTrojanInboundObject();
-            break;
-          case XrayProtocol.TUN:
-            proxy = plainToInstance(XrayInboundObject<XrayTunInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayTunInboundObject, proxy.settings) ?? new XrayTunInboundObject();
-            break;
-          case XrayProtocol.HYSTERIA:
-            proxy = plainToInstance(XrayInboundObject<XrayHysteriaInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayHysteriaInboundObject, proxy.settings) ?? new XrayHysteriaInboundObject();
-            break;
-        }
-
+        proxy = deserializeProxy(proxy, inboundSettingsMap, XrayInboundObject);
         proxy.streamSettings = transformStreamSettings(proxy.streamSettings);
-        if (proxy.allocate) {
-          proxy.allocate = plainToInstance(XrayAllocateObject, proxy.allocate);
-        }
-
-        if (proxy.sniffing) {
-          proxy.sniffing = plainToInstance(XraySniffingObject, proxy.sniffing);
-        }
+        if (proxy.allocate) proxy.allocate = plainToInstance(XrayAllocateObject, proxy.allocate);
+        if (proxy.sniffing) proxy.sniffing = plainToInstance(XraySniffingObject, proxy.sniffing);
         this.xrayConfig.inbounds[index] = proxy;
       });
 
       this.xrayConfig.outbounds.forEach((proxy, index) => {
-        switch (proxy.protocol) {
-          case XrayProtocol.FREEDOM:
-            proxy = plainToInstance(XrayOutboundObject<XrayFreedomOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayFreedomOutboundObject, proxy.settings) ?? new XrayFreedomOutboundObject();
-            break;
-          case XrayProtocol.BLACKHOLE:
-            proxy = plainToInstance(XrayOutboundObject<XrayBlackholeOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayBlackholeOutboundObject, proxy.settings) ?? new XrayBlackholeOutboundObject();
-            break;
-          case XrayProtocol.SOCKS:
-            proxy = plainToInstance(XrayOutboundObject<XraySocksOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XraySocksOutboundObject, proxy.settings) ?? new XraySocksOutboundObject();
-            break;
-          case XrayProtocol.TROJAN:
-            proxy = plainToInstance(XrayOutboundObject<XrayTrojanOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayTrojanOutboundObject, proxy.settings) ?? new XrayTrojanOutboundObject();
-            break;
-          case XrayProtocol.VMESS:
-            proxy = plainToInstance(XrayOutboundObject<XrayVmessOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayVmessOutboundObject, proxy.settings) ?? new XrayVmessOutboundObject();
-            break;
-          case XrayProtocol.VLESS:
-            proxy = plainToInstance(XrayOutboundObject<XrayVlessOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayVlessOutboundObject, proxy.settings) ?? new XrayVlessOutboundObject();
-            break;
-          case XrayProtocol.WIREGUARD:
-            proxy = plainToInstance(XrayOutboundObject<XrayWireguardInboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayWireguardInboundObject, proxy.settings) ?? new XrayWireguardInboundObject();
-            break;
-          case XrayProtocol.LOOPBACK:
-            proxy = plainToInstance(XrayOutboundObject<XrayLoopbackOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayLoopbackOutboundObject, proxy.settings) ?? new XrayLoopbackOutboundObject();
-            break;
-          case XrayProtocol.DNS:
-            proxy = plainToInstance(XrayOutboundObject<XrayDnsOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayDnsOutboundObject, proxy.settings) ?? new XrayDnsOutboundObject();
-            break;
-          case XrayProtocol.HTTP:
-            proxy = plainToInstance(XrayOutboundObject<XrayHttpOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayHttpOutboundObject, proxy.settings) ?? new XrayHttpOutboundObject();
-            break;
-          case XrayProtocol.SHADOWSOCKS:
-            proxy = plainToInstance(XrayOutboundObject<XrayShadowsocksOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayShadowsocksOutboundObject, proxy.settings) ?? new XrayShadowsocksOutboundObject();
-            break;
-          case XrayProtocol.HYSTERIA:
-            proxy = plainToInstance(XrayOutboundObject<XrayHysteriaOutboundObject>, proxy);
-            proxy.settings = plainToInstance(XrayHysteriaOutboundObject, proxy.settings) ?? new XrayHysteriaOutboundObject();
-            break;
-        }
-
+        proxy = deserializeProxy(proxy, outboundSettingsMap, XrayOutboundObject);
         proxy.streamSettings = transformStreamSettings(proxy.streamSettings);
         this.xrayConfig.outbounds[index] = proxy;
       });
 
       if (config.routing) {
         this.xrayConfig.routing = plainToInstance(XrayRoutingObject, config.routing);
-
-        if (this.xrayConfig.routing.policies) {
-          this.xrayConfig.routing.policies.forEach((policy, index) => {
-            if (this.xrayConfig.routing?.policies) {
-              this.xrayConfig.routing.policies[index] = plainToInstance(XrayRoutingPolicy, policy);
-            }
-          });
-        }
-
-        if (this.xrayConfig.routing.rules) {
-          this.xrayConfig.routing.rules.forEach((rule, index) => {
-            if (this.xrayConfig.routing?.rules) {
-              this.xrayConfig.routing.rules[index] = plainToInstance(XrayRoutingRuleObject, rule);
-            }
-          });
-        }
-        if (this.xrayConfig.routing.disabled_rules) {
-          this.xrayConfig.routing.disabled_rules.forEach((rule, index) => {
-            if (this.xrayConfig.routing?.disabled_rules) {
-              this.xrayConfig.routing.disabled_rules[index] = plainToInstance(XrayRoutingRuleObject, rule);
-            }
-          });
-        }
-        if (this.xrayConfig.routing.balancers) {
-          this.xrayConfig.routing.balancers.forEach((balancer, index) => {
-            if (this.xrayConfig.routing?.balancers) {
-              this.xrayConfig.routing.balancers[index] = plainToInstance(XrayBalancerObject, balancer);
-            }
-          });
-        }
+        deserializeArray(this.xrayConfig.routing.policies, XrayRoutingPolicy);
+        deserializeArray(this.xrayConfig.routing.rules, XrayRoutingRuleObject);
+        deserializeArray(this.xrayConfig.routing.disabled_rules, XrayRoutingRuleObject);
+        deserializeArray(this.xrayConfig.routing.balancers, XrayBalancerObject);
       }
 
       if (config.dns) {
         this.xrayConfig.dns = plainToInstance(XrayDnsObject, config.dns);
-        if (this.xrayConfig.dns?.servers) {
+        const dnsServers = this.xrayConfig.dns?.servers;
+        if (dnsServers) {
           const rulesMap = new Map<number, XrayRoutingRuleObject>();
           [...(this.xrayConfig.routing?.rules ?? []), ...(this.xrayConfig.routing?.disabled_rules ?? [])].forEach((rule) => {
             rulesMap.set(rule.idx, rule);
           });
-          this.xrayConfig.dns.servers.forEach((server, index) => {
-            if (this.xrayConfig.dns?.servers) {
-              this.xrayConfig.dns.servers[index] = typeof server === 'string' ? server : plainToInstance(XrayDnsServerObject, server);
-              server = this.xrayConfig.dns.servers[index];
-              if (server instanceof XrayDnsServerObject) {
-                const serverObj = server;
-                if (serverObj.rules && serverObj.rules.length > 0) {
-                  serverObj.domains = [];
-                  const serverRules = Array<XrayRoutingRuleObject>();
-                  serverObj.rules.forEach((rule, index) => {
-                    if (serverObj.rules && typeof rule === 'number') {
-                      const serverRule = rulesMap.get(rule);
-                      if (serverRule) {
-                        serverRules.push(serverRule);
-                      }
-                    }
-                  });
-                  server.rules = serverRules;
-                }
-              }
+          dnsServers.forEach((server, index) => {
+            dnsServers[index] = typeof server === 'string' ? server : plainToInstance(XrayDnsServerObject, server);
+            server = dnsServers[index];
+            if (server instanceof XrayDnsServerObject && server.rules?.length) {
+              server.domains = [];
+              server.rules = (server.rules as unknown as number[])
+                .map((ruleIdx) => rulesMap.get(ruleIdx))
+                .filter((r): r is XrayRoutingRuleObject => r !== undefined);
             }
           });
         }
       }
 
       if (Array.isArray(config.fakedns)) {
-        const rawFakeDns = config.fakedns as unknown[];
-        const fakedns: XrayFakeDnsObject[] = rawFakeDns.map((entry) => plainToInstance(XrayFakeDnsObject, entry as object));
-        this.xrayConfig.fakedns = fakedns;
+        this.xrayConfig.fakedns = (config.fakedns as unknown[]).map((entry) => plainToInstance(XrayFakeDnsObject, entry as object));
       }
 
-      this.xrayConfig.inbounds.forEach((proxy) => {
-        if (proxy.streamSettings?.tlsSettings?.certificates) {
-          proxy.streamSettings.tlsSettings.certificates = plainToInstance(XrayStreamTlsSettingsObject, proxy.streamSettings.tlsSettings.certificates);
-          proxy.streamSettings.tlsSettings.certificates.forEach((certificate, index) => {
-            if (proxy.streamSettings?.tlsSettings?.certificates) {
-              proxy.streamSettings.tlsSettings.certificates[index] = plainToInstance(XrayStreamTlsCertificateObject, certificate);
-            }
-          });
-        }
-      });
-      this.xrayConfig.outbounds.forEach((proxy) => {
-        if (proxy.streamSettings?.tlsSettings?.certificates) {
-          proxy.streamSettings.tlsSettings.certificates = plainToInstance(XrayStreamTlsSettingsObject, proxy.streamSettings.tlsSettings.certificates);
-          proxy.streamSettings.tlsSettings.certificates.forEach((certificate, index) => {
-            if (proxy.streamSettings?.tlsSettings?.certificates) {
-              proxy.streamSettings.tlsSettings.certificates[index] = plainToInstance(XrayStreamTlsCertificateObject, certificate);
-            }
-          });
-        }
-      });
+      deserializeTlsCertificates(this.xrayConfig.inbounds);
+      deserializeTlsCertificates(this.xrayConfig.outbounds);
       Object.assign(xrayConfig, this.xrayConfig);
       return this.xrayConfig;
     } catch (e) {
@@ -803,39 +689,29 @@ function transformMaskArray(masks: any[] | undefined): XrayFinalMaskObject[] | u
   });
 }
 
+const streamSettingsFieldMap: [keyof XrayStreamSettingsObject, new () => any][] = [
+  ['sockopt', XraySockoptObject],
+  ['realitySettings', XrayStreamRealitySettingsObject],
+  ['tlsSettings', XrayStreamTlsSettingsObject],
+  ['tcpSettings', XrayStreamTcpSettingsObject],
+  ['kcpSettings', XrayStreamKcpSettingsObject],
+  ['wsSettings', XrayStreamWsSettingsObject],
+  ['httpupgradeSettings', XrayStreamHttpUpgradeSettingsObject],
+  ['grpcSettings', XrayStreamGrpcSettingsObject],
+  ['xhttpSettings', XrayStreamHttpSettingsObject],
+  ['hysteriaSettings', XrayStreamHysteriaSettingsObject]
+];
+
 function transformStreamSettings(streamSettings: XrayStreamSettingsObject | undefined): XrayStreamSettingsObject {
   if (!streamSettings) return new XrayStreamSettingsObject();
   const settings = plainToInstance(XrayStreamSettingsObject, streamSettings);
-  if (streamSettings.sockopt) {
-    settings.sockopt = plainToInstance(XraySockoptObject, streamSettings.sockopt);
+
+  for (const [field, SettingsClass] of streamSettingsFieldMap) {
+    if (streamSettings[field]) {
+      (settings as any)[field] = plainToInstance(SettingsClass, streamSettings[field]);
+    }
   }
-  if (streamSettings.realitySettings) {
-    settings.realitySettings = plainToInstance(XrayStreamRealitySettingsObject, streamSettings.realitySettings);
-  }
-  if (streamSettings.tlsSettings) {
-    settings.tlsSettings = plainToInstance(XrayStreamTlsSettingsObject, streamSettings.tlsSettings);
-  }
-  if (streamSettings.tcpSettings) {
-    settings.tcpSettings = plainToInstance(XrayStreamTcpSettingsObject, streamSettings.tcpSettings);
-  }
-  if (streamSettings.kcpSettings) {
-    settings.kcpSettings = plainToInstance(XrayStreamKcpSettingsObject, streamSettings.kcpSettings);
-  }
-  if (streamSettings.wsSettings) {
-    settings.wsSettings = plainToInstance(XrayStreamWsSettingsObject, streamSettings.wsSettings);
-  }
-  if (streamSettings.httpupgradeSettings) {
-    settings.httpupgradeSettings = plainToInstance(XrayStreamHttpUpgradeSettingsObject, streamSettings.httpupgradeSettings);
-  }
-  if (streamSettings.grpcSettings) {
-    settings.grpcSettings = plainToInstance(XrayStreamGrpcSettingsObject, streamSettings.grpcSettings);
-  }
-  if (streamSettings.xhttpSettings) {
-    settings.xhttpSettings = plainToInstance(XrayStreamHttpSettingsObject, streamSettings.xhttpSettings);
-  }
-  if (streamSettings.hysteriaSettings) {
-    settings.hysteriaSettings = plainToInstance(XrayStreamHysteriaSettingsObject, streamSettings.hysteriaSettings);
-  }
+
   if (streamSettings.finalmask) {
     settings.finalmask = plainToInstance(XrayFinalMaskSettingsObject, streamSettings.finalmask);
     settings.finalmask.udp = transformMaskArray(streamSettings.finalmask.udp);
@@ -845,6 +721,7 @@ function transformStreamSettings(streamSettings: XrayStreamSettingsObject | unde
     settings.finalmask = new XrayFinalMaskSettingsObject();
     settings.finalmask.udp = transformMaskArray((streamSettings as any).udpmasks);
   }
+
   return settings;
 }
 
