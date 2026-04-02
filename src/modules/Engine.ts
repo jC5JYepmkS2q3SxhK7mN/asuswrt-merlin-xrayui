@@ -118,7 +118,6 @@ function deserializeArray<T>(items: any[] | undefined, ItemClass: new () => T): 
 function deserializeTlsCertificates(proxies: any[]): void {
   proxies.forEach((proxy) => {
     if (proxy.streamSettings?.tlsSettings?.certificates) {
-      proxy.streamSettings.tlsSettings.certificates = plainToInstance(XrayStreamTlsSettingsObject, proxy.streamSettings.tlsSettings.certificates);
       deserializeArray(proxy.streamSettings.tlsSettings.certificates, XrayStreamTlsCertificateObject);
     }
   });
