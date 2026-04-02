@@ -1,5 +1,11 @@
 # XRAYUI Changelog
 
+## [0.66.0] - 2026-04-02
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: Wireguard outbound used incorrect field name `privateKey` instead of `secretKey`, causing Xray-core to reject the configuration.
+
 ## [0.65.0] - 2026-02-22
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._

@@ -167,7 +167,7 @@ export class XrayTrojanOutboundObject implements IProtocolType {
 
 export class XrayWireguardOutboundObject implements IProtocolType {
   static readonly strategyOptions = ['ForceIPv6v4', 'ForceIPv6', 'ForceIPv4v6', 'ForceIPv4', 'ForceIP'];
-  public privateKey!: string;
+  public secretKey!: string;
   public address: string[] = [];
   public peers: XrayPeerObject[] = [];
   public mtu = 1420;
