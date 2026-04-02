@@ -56,6 +56,7 @@
       password?: string;
     };
     streamSettings?: {
+      network?: string;
       security?: string;
       realitySettings?: XrayStreamRealitySettingsObject;
       tlsSettings?: XrayStreamTlsSettingsObject;
@@ -129,7 +130,7 @@
 
         addQueryParam('security', security);
         addQueryParam('flow', props.client.flow ?? XrayOptions.clientFlowOptions[1]);
-        addQueryParam('type', 'tcp');
+        addQueryParam('type', p.streamSettings?.network || 'tcp');
 
         if (security === 'reality' && p.streamSettings?.realitySettings) {
           addQueryParam('sni', p.streamSettings.realitySettings.serverNames?.[0]!);
