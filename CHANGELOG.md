@@ -5,6 +5,7 @@
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
 
 - FIXED: Wireguard outbound used incorrect field name `privateKey` instead of `secretKey`, causing Xray-core to reject the configuration.
+- FIXED: VLESS inbound clients with `flow: "none"` (e.g. when using XHTTP transport) were not normalized before saving, causing Xray-core to reject the configuration with _"flow doesn't support none in this version"_.
 
 ## [0.65.0] - 2026-02-22
 

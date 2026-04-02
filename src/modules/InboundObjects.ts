@@ -80,6 +80,7 @@ export class XrayVlessInboundObject implements IProtocolType {
     return this.clients.map((c) => c.email).filter((email): email is string => email !== undefined);
   };
   normalize = (): this | undefined => {
+    this.clients.forEach((c) => c.normalize());
     return this;
   };
 }
@@ -88,6 +89,10 @@ export class XrayVmessInboundObject implements IProtocolType {
   public clients: XrayVmessClientObject[] = [];
   getUserNames = (): string[] => {
     return this.clients.map((c) => c.email).filter((email): email is string => email !== undefined);
+  };
+  normalize = (): this | undefined => {
+    this.clients.forEach((c) => c.normalize());
+    return this;
   };
 }
 

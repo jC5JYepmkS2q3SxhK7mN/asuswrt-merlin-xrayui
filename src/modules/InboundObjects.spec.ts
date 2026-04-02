@@ -101,6 +101,28 @@ describe('InboundObjects', () => {
     });
   });
 
+  describe('XrayVlessInboundObject', () => {
+    it('normalizes client flow "none" to undefined', () => {
+      const vless = new XrayVlessInboundObject();
+      const client = new XrayVlessClientObject();
+      client.id = 'test-id';
+      client.flow = 'none';
+      vless.clients = [client];
+      vless.normalize();
+      expect(vless.clients[0].flow).toBeUndefined();
+    });
+
+    it('preserves client flow "xtls-rprx-vision"', () => {
+      const vless = new XrayVlessInboundObject();
+      const client = new XrayVlessClientObject();
+      client.id = 'test-id';
+      client.flow = 'xtls-rprx-vision';
+      vless.clients = [client];
+      vless.normalize();
+      expect(vless.clients[0].flow).toBe('xtls-rprx-vision');
+    });
+  });
+
   describe('XrayTrojanInboundObject', () => {
     it('normalize is pass‑through', () => {
       const trojan = new XrayTrojanInboundObject();
