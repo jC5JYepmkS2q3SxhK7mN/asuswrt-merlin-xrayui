@@ -1,5 +1,11 @@
 # XRAYUI Changelog
 
+## [0.66.1] - 2026-04-02
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: DNS ipset mode `redirect` did not populate the IPv6 ipset (`XRAYUI_PROXY6`) for `geosite:` domains, causing all IPv6 traffic to bypass the proxy on routers with native IPv6.
+
 ## [0.66.0] - 2026-04-02
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
