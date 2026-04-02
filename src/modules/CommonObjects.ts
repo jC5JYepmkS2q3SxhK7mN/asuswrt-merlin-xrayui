@@ -10,7 +10,7 @@ import {
   XrayStreamHttpUpgradeSettingsObject,
   XrayStreamSplitHttpSettingsObject,
   XrayStreamHysteriaSettingsObject,
-  XrayFinalMaskObject
+  XrayFinalMaskSettingsObject
 } from './TransportObjects';
 
 export const isObjectEmpty = (obj: any): boolean => {
@@ -664,7 +664,7 @@ export class XrayStreamSettingsObject {
   public httpupgradeSettings?: XrayStreamHttpUpgradeSettingsObject;
   public splithttpSettings?: XrayStreamSplitHttpSettingsObject;
   public hysteriaSettings?: XrayStreamHysteriaSettingsObject;
-  public udpmasks?: XrayFinalMaskObject[];
+  public finalmask?: XrayFinalMaskSettingsObject;
   public sockopt?: XraySockoptObject;
 
   public normalize(): this | undefined {
@@ -681,13 +681,8 @@ export class XrayStreamSettingsObject {
 
     if (this.normalizeAllSettings) this.normalizeAllSettings();
 
-    if (this.udpmasks && this.udpmasks.length > 0) {
-      this.udpmasks = this.udpmasks
-        .map((mask) => (typeof mask.normalize === 'function' ? mask.normalize() : mask))
-        .filter((mask): mask is XrayFinalMaskObject => mask !== undefined);
-      if (this.udpmasks.length === 0) this.udpmasks = undefined;
-    } else {
-      this.udpmasks = undefined;
+    if (this.finalmask && typeof this.finalmask.normalize === 'function') {
+      this.finalmask = this.finalmask.normalize();
     }
 
     if (this.sockopt && typeof this.sockopt.normalize === 'function') this.sockopt = this.sockopt.normalize();

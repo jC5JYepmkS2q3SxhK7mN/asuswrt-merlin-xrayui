@@ -82,22 +82,87 @@
     </tr>
     <tr>
       <th>
-        {{ $t('com.NetworkHysteria.label_salamander_enabled') }}
-        <hint v-html="$t('com.NetworkHysteria.hint_salamander_enabled')"></hint>
+        {{ $t('com.NetworkHysteria.label_finalmask_enabled') }}
+        <hint v-html="$t('com.NetworkHysteria.hint_finalmask_enabled')"></hint>
       </th>
       <td>
-        <input type="checkbox" v-model="salamanderEnabled" />
+        <input type="checkbox" v-model="finalmaskEnabled" />
       </td>
     </tr>
-    <tr v-if="salamanderEnabled">
-      <th>
-        {{ $t('com.NetworkHysteria.label_salamander_password') }}
-        <hint v-html="$t('com.NetworkHysteria.hint_salamander_password')"></hint>
-      </th>
-      <td>
-        <input type="text" class="input_25_table" v-model="salamanderPassword" autocomplete="off" autocorrect="off" autocapitalize="off" />
-      </td>
-    </tr>
+    <template v-if="finalmaskEnabled && transport.finalmask?.udp && transport.finalmask?.udp.length > 0">
+      <tr>
+        <th>
+          {{ $t('com.NetworkHysteria.label_finalmask_type') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_finalmask_type')"></hint>
+        </th>
+        <td>
+          <select class="input_option" v-model="transport.finalmask!.udp![0].type" @change="onMaskTypeChange">
+            <option v-for="mt in maskTypes" :key="mt" :value="mt">{{ mt }}</option>
+          </select>
+        </td>
+      </tr>
+      <tr v-if="hasPassword">
+        <th>
+          {{ $t('com.NetworkHysteria.label_finalmask_password') }}
+          <hint v-html="$t('com.NetworkHysteria.hint_finalmask_password')"></hint>
+        </th>
+        <td>
+          <input type="text" class="input_25_table" v-model="finalmaskPassword" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </td>
+      </tr>
+      <tr v-if="hasDomain">
+        <th>
+          Domain
+        </th>
+        <td>
+          <input type="text" class="input_25_table" v-model="finalmaskDomain" autocomplete="off" autocorrect="off" autocapitalize="off" />
+          <span class="hint-color">e.g., t.example.com</span>
+        </td>
+      </tr>
+      <template v-if="transport.finalmask?.udp[0].type === 'sudoku'">
+        <tr>
+          <th>
+            {{ $t('com.NetworkHysteria.label_sudoku_ascii') }}
+            <hint v-html="$t('com.NetworkHysteria.hint_sudoku_ascii')"></hint>
+          </th>
+          <td>
+            <select class="input_option" v-model="sudokuSettings.ascii">
+              <option v-for="opt in sudokuAsciiOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            {{ $t('com.NetworkHysteria.label_sudoku_padding_min') }}
+            <hint v-html="$t('com.NetworkHysteria.hint_sudoku_padding')"></hint>
+          </th>
+          <td>
+            <input type="number" class="input_6_table" v-model.number="sudokuSettings.paddingMin" min="0" max="100" />
+            <span class="hint-color">0-100 (%)</span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            {{ $t('com.NetworkHysteria.label_sudoku_padding_max') }}
+            <hint v-html="$t('com.NetworkHysteria.hint_sudoku_padding')"></hint>
+          </th>
+          <td>
+            <input type="number" class="input_6_table" v-model.number="sudokuSettings.paddingMax" min="0" max="100" />
+            <span class="hint-color">0-100 (%)</span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            {{ $t('com.NetworkHysteria.label_sudoku_custom_tables') }}
+            <hint v-html="$t('com.NetworkHysteria.hint_sudoku_custom_tables')"></hint>
+          </th>
+          <td>
+            <input type="text" class="input_25_table" v-model="sudokuCustomTablesStr" autocomplete="off" autocorrect="off" autocapitalize="off" />
+            <span class="hint-color">comma-separated 8-char patterns (2x, 2p, 4v)</span>
+          </td>
+        </tr>
+      </template>
+    </template>
     <tr>
       <th>
         {{ $t('com.NetworkHysteria.label_masquerade_enabled') }}
@@ -181,7 +246,10 @@
   import { defineComponent, ref, computed } from 'vue';
   import Hint from '@main/Hint.vue';
   import { XrayStreamSettingsObject } from '@/modules/CommonObjects';
-  import { XrayStreamHysteriaSettingsObject, XrayHysteriaMasqueradeObject, XrayUdpHopObject, XrayFinalMaskObject, XraySalamanderObject } from '@/modules/TransportObjects';
+  import { XrayStreamHysteriaSettingsObject, XrayHysteriaMasqueradeObject, XrayUdpHopObject, XrayFinalMaskObject, XrayFinalMaskSettingsObject, XraySalamanderObject, XraySudokuObject } from '@/modules/TransportObjects';
+
+  const passwordTypes = new Set(['salamander', 'mkcp-aes128gcm', 'sudoku']);
+  const domainTypes = new Set(['header-dns', 'xdns']);
 
   export default defineComponent({
     name: 'NetworkHysteria',
@@ -212,28 +280,76 @@
         }
       });
 
-      const salamanderEnabled = computed({
-        get: () => !!(transport.value.udpmasks && transport.value.udpmasks.length > 0),
+      const maskTypes = XrayFinalMaskObject.udpMaskTypes;
+      const sudokuAsciiOptions = XraySudokuObject.asciiOptions;
+
+      const finalmaskEnabled = computed({
+        get: () => !!(transport.value.finalmask?.udp && transport.value.finalmask.udp.length > 0),
         set: (val) => {
           if (val) {
             const finalMask = new XrayFinalMaskObject();
             finalMask.settings = new XraySalamanderObject();
-            transport.value.udpmasks = [finalMask];
-          } else {
-            transport.value.udpmasks = undefined;
+            if (!transport.value.finalmask) transport.value.finalmask = new XrayFinalMaskSettingsObject();
+            transport.value.finalmask.udp = [finalMask];
+          } else if (transport.value.finalmask) {
+            transport.value.finalmask.udp = undefined;
           }
         }
       });
 
-      const salamanderPassword = computed({
-        get: () => transport.value.udpmasks?.[0]?.settings?.password ?? '',
+      const onMaskTypeChange = () => {
+        const mask = transport.value.finalmask?.udp?.[0];
+        if (!mask) return;
+        mask.settings = XrayFinalMaskObject.createSettings(mask.type);
+      };
+
+      const hasPassword = computed(() => {
+        const type = transport.value.finalmask?.udp?.[0]?.type;
+        return type ? passwordTypes.has(type) : false;
+      });
+
+      const hasDomain = computed(() => {
+        const type = transport.value.finalmask?.udp?.[0]?.type;
+        return type ? domainTypes.has(type) : false;
+      });
+
+      const finalmaskPassword = computed({
+        get: () => (transport.value.finalmask?.udp?.[0]?.settings as any)?.password ?? '',
         set: (val) => {
-          if (transport.value.udpmasks && transport.value.udpmasks.length > 0) {
-            if (!transport.value.udpmasks[0].settings) {
-              transport.value.udpmasks[0].settings = new XraySalamanderObject();
+          const udp = transport.value.finalmask?.udp;
+          if (udp && udp.length > 0) {
+            if (!udp[0].settings) {
+              udp[0].settings = XrayFinalMaskObject.createSettings(udp[0].type);
             }
-            transport.value.udpmasks[0].settings.password = val;
+            (udp[0].settings as any).password = val;
           }
+        }
+      });
+
+      const finalmaskDomain = computed({
+        get: () => (transport.value.finalmask?.udp?.[0]?.settings as any)?.domain ?? '',
+        set: (val: string) => {
+          const udp = transport.value.finalmask?.udp;
+          if (udp && udp.length > 0 && udp[0].settings) {
+            (udp[0].settings as any).domain = val;
+          }
+        }
+      });
+
+      const sudokuSettings = computed(() => {
+        const mask = transport.value.finalmask?.udp?.[0];
+        if (mask?.type === 'sudoku' && mask.settings) return mask.settings as XraySudokuObject;
+        return new XraySudokuObject();
+      });
+
+      const sudokuCustomTablesStr = computed({
+        get: () => (sudokuSettings.value.customTables ?? []).join(', '),
+        set: (val) => {
+          const s = sudokuSettings.value;
+          s.customTables = val
+            .split(',')
+            .map((t) => t.trim())
+            .filter((t) => t !== '');
         }
       });
 
@@ -255,8 +371,16 @@
         transport,
         congestionOptions,
         udphopEnabled,
-        salamanderEnabled,
-        salamanderPassword,
+        finalmaskEnabled,
+        finalmaskPassword,
+        finalmaskDomain,
+        hasPassword,
+        hasDomain,
+        maskTypes,
+        onMaskTypeChange,
+        sudokuAsciiOptions,
+        sudokuSettings,
+        sudokuCustomTablesStr,
         masqueradeEnabled,
         masqueradeTypes
       };

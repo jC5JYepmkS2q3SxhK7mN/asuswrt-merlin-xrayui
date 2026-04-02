@@ -63,7 +63,7 @@ import {
   XrayStreamTcpSettingsObject,
   XrayStreamWsSettingsObject,
   XrayFinalMaskObject,
-  XraySalamanderObject
+  XrayFinalMaskSettingsObject
 } from './TransportObjects';
 import { XrayProtocol } from './Options';
 
@@ -779,6 +779,22 @@ export class Engine {
   }
 }
 
+function transformMaskArray(masks: any[] | undefined): XrayFinalMaskObject[] | undefined {
+  if (!masks || masks.length === 0) return undefined;
+  return masks.map((mask: any) => {
+    const finalMask = plainToInstance(XrayFinalMaskObject, mask);
+    if (mask.settings) {
+      finalMask.settings = XrayFinalMaskObject.deserializeSettings(mask.type, mask.settings);
+    } else if (mask.password && !XrayFinalMaskObject.noSettingsTypes.has(mask.type)) {
+      // Legacy: password at top level (old salamander format)
+      const settings = XrayFinalMaskObject.createSettings(mask.type ?? 'salamander');
+      if (settings && 'password' in settings) (settings as any).password = mask.password;
+      finalMask.settings = settings;
+    }
+    return finalMask;
+  });
+}
+
 function transformStreamSettings(streamSettings: XrayStreamSettingsObject | undefined): XrayStreamSettingsObject {
   if (!streamSettings) return new XrayStreamSettingsObject();
   const settings = plainToInstance(XrayStreamSettingsObject, streamSettings);
@@ -812,17 +828,14 @@ function transformStreamSettings(streamSettings: XrayStreamSettingsObject | unde
   if (streamSettings.hysteriaSettings) {
     settings.hysteriaSettings = plainToInstance(XrayStreamHysteriaSettingsObject, streamSettings.hysteriaSettings);
   }
-  if (streamSettings.udpmasks && streamSettings.udpmasks.length > 0) {
-    settings.udpmasks = streamSettings.udpmasks.map((mask: XrayFinalMaskObject & { password?: string }) => {
-      const finalMask = plainToInstance(XrayFinalMaskObject, mask);
-      if (mask.password && !mask.settings) {
-        finalMask.settings = new XraySalamanderObject();
-        finalMask.settings.password = mask.password;
-      } else if (mask.settings) {
-        finalMask.settings = plainToInstance(XraySalamanderObject, mask.settings);
-      }
-      return finalMask;
-    });
+  if (streamSettings.finalmask) {
+    settings.finalmask = plainToInstance(XrayFinalMaskSettingsObject, streamSettings.finalmask);
+    settings.finalmask.udp = transformMaskArray(streamSettings.finalmask.udp);
+    settings.finalmask.tcp = transformMaskArray(streamSettings.finalmask.tcp);
+  } else if ((streamSettings as any).udpmasks?.length > 0) {
+    // Legacy: migrate old udpmasks to new finalmask.udp
+    settings.finalmask = new XrayFinalMaskSettingsObject();
+    settings.finalmask.udp = transformMaskArray((streamSettings as any).udpmasks);
   }
   return settings;
 }

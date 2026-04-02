@@ -67,10 +67,12 @@
         up?: string;
         down?: string;
       };
-      udpmasks?: Array<{
-        type?: string;
-        settings?: { password?: string };
-      }>;
+      finalmask?: {
+        udp?: Array<{
+          type?: string;
+          settings?: { password?: string };
+        }>;
+      };
     };
   }
 
@@ -151,7 +153,7 @@
             addParam('pinSHA256', p.streamSettings.tlsSettings.pinnedPeerCertificateSha256.join(','));
           }
 
-          const obfsMask = p.streamSettings?.udpmasks?.[0];
+          const obfsMask = p.streamSettings?.finalmask?.udp?.[0];
           if (obfsMask?.type === 'salamander' && obfsMask.settings?.password) {
             addParam('obfs', 'salamander');
             addParam('obfs-password', obfsMask.settings.password);

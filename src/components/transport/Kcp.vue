@@ -16,7 +16,7 @@
         <hint v-html="$t('com.Kcp.hint_tti')"></hint>
       </th>
       <td>
-        <input type="number" maxlength="3" class="input_6_table" onkeypress="return validator.isNumber(this,event);" v-model="transport.kcpSettings.tti" />
+        <input type="number" maxlength="4" class="input_6_table" onkeypress="return validator.isNumber(this,event);" v-model="transport.kcpSettings.tti" />
         <span class="hint-color">default: 50</span>
       </td>
     </tr>

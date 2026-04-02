@@ -12,6 +12,7 @@
 - ADDED: Load balancers — distribute traffic across multiple proxy servers automatically. If a server goes down, traffic can fall back to a backup. Set up balancers in `Routing` and assign them to rules instead of a single `outbound`.
 - FIXED: QR code for VLESS clients always showed `type=tcp` regardless of the actual transport (e.g. XHTTP, WebSocket, gRPC).
 - ADDED: Hysteria2 inbound support — accept connections from Hysteria2 clients with client management, QR code sharing, and `hy2://` link generation. Includes masquerade (file/proxy/string) and UDP idle timeout settings in the Hysteria transport configuration.
+- ADDED: Full `FinalMask` support — all traffic obfuscation types from the latest Xray-core are now available, including `noise`, `fragment`, `header-custom`, `header-dns`, `xdns`, `xicmp`, `mkcp-aes128gcm`, and all legacy mKCP header types. QUIC parameters (congestion control, brutal mode, UDP port hopping, window tuning) are also supported.
 - FIXED: Inbound client normalization could fail with _"normalize is not a function"_ when loading configs with VLESS or VMess inbound clients.
 
 ## [0.65.0] - 2026-02-22
