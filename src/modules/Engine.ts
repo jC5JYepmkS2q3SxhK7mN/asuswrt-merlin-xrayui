@@ -20,7 +20,8 @@ import {
   XrayVlessOutboundObject,
   XrayHttpOutboundObject,
   XrayShadowsocksOutboundObject,
-  XrayHysteriaOutboundObject
+  XrayHysteriaOutboundObject,
+  XrayWireguardOutboundObject
 } from './OutboundObjects';
 import {
   XrayDnsObject,
@@ -89,7 +90,7 @@ const outboundSettingsMap: Record<string, new () => any> = {
   [XrayProtocol.TROJAN]: XrayTrojanOutboundObject,
   [XrayProtocol.VMESS]: XrayVmessOutboundObject,
   [XrayProtocol.VLESS]: XrayVlessOutboundObject,
-  [XrayProtocol.WIREGUARD]: XrayWireguardInboundObject,
+  [XrayProtocol.WIREGUARD]: XrayWireguardOutboundObject,
   [XrayProtocol.LOOPBACK]: XrayLoopbackOutboundObject,
   [XrayProtocol.DNS]: XrayDnsOutboundObject,
   [XrayProtocol.HTTP]: XrayHttpOutboundObject,
