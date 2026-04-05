@@ -1,5 +1,11 @@
 # XRAYUI Changelog
 
+## [0.66.2] - 2026-04-05
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: Auto-fallback and subscription refresh could switch to the wrong server (e.g. selecting a German server instead of Estonian, or JP instead of UK). The selected server is now correctly preserved across restarts and automatic updates.
+
 ## [0.66.1] - 2026-04-02
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
