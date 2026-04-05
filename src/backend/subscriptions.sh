@@ -14,7 +14,7 @@ subscription_curl() {
 process_subscriptions() {
     local config_file="$1"
     local cfg=$(cat "$1")
-    local idx url proto tag fetched rep
+    local idx url proto tag active fetched rep
     local temp_config="/tmp/xray_server_config_new.json"
     while IFS= read -r entry; do
         [ -z "$entry" ] && continue
@@ -22,24 +22,33 @@ process_subscriptions() {
         url=$(printf '%s' "$entry" | jq -r '.url')
         proto=$(printf '%s' "$entry" | jq -r '.proto')
         tag=$(printf '%s' "$entry" | jq -r '.tag')
-        fetched=$(subscription_curl "$url") || continue
-        if is_json "$fetched"; then
-            rep=$(printf '%s' "$fetched" | jq -c --arg t "$tag" --arg p "$proto" '
-                (.outbounds // [])
-                | map(select((($t != "") and (.tag==$t)) or (.protocol==$p)))
-                | first')
-        else
-            local maybe
-            maybe=$(b64d "$fetched")
-            if is_json "$maybe"; then
-                rep=$(printf '%s' "$maybe" | jq -c --arg t "$tag" --arg p "$proto" '
+        active=$(printf '%s' "$entry" | jq -r '.active')
+        rep=""
+
+        if [ -n "$active" ] && [ "$active" != "null" ]; then
+            rep=$(subscription_parse_link_to_outbound "$active")
+        fi
+
+        if [ -z "$rep" ] || [ "$rep" = "null" ]; then
+            fetched=$(subscription_curl "$url") || continue
+            if is_json "$fetched"; then
+                rep=$(printf '%s' "$fetched" | jq -c --arg t "$tag" --arg p "$proto" '
                     (.outbounds // [])
-                    | map(select((($t != "") and (.tag==$t)) or (.protocol==$p)))
-                    | first')
+                    | (if ($t != "") then (map(select(.tag==$t)) | first) else null end)
+                      // (map(select(.protocol==$p)) | first)')
             else
-                local lst
-                lst=$(subscription_process_url_list "$proto" "$fetched")
-                rep=$(subscription_select_outbound_by_proto "$proto" "$lst")
+                local maybe
+                maybe=$(b64d "$fetched")
+                if is_json "$maybe"; then
+                    rep=$(printf '%s' "$maybe" | jq -c --arg t "$tag" --arg p "$proto" '
+                        (.outbounds // [])
+                        | (if ($t != "") then (map(select(.tag==$t)) | first) else null end)
+                          // (map(select(.protocol==$p)) | first)')
+                else
+                    local lst
+                    lst=$(subscription_process_url_list "$proto" "$fetched")
+                    rep=$(subscription_select_outbound_by_tag_or_proto "$tag" "$proto" "$lst")
+                fi
             fi
         fi
         [ -z "$rep" ] || [ "$rep" = "null" ] && continue
@@ -64,7 +73,7 @@ process_subscriptions() {
 $(printf '%s' "$cfg" | jq -c '.outbounds
     | to_entries[]
     | select(.value.surl and .value.surl!="")
-    | {idx:.key,url:.value.surl,proto:.value.protocol,tag:(.value.tag//"")}')
+    | {idx:.key,url:.value.surl,proto:.value.protocol,tag:(.value.tag//""),active:(.value.subPool.active//"")}')
 EOF
     printf '%s' "$cfg" >"$temp_config" && cp "$temp_config" "$config_file" && rm -f "$temp_config"
 }
@@ -83,11 +92,14 @@ subscription_parse_link_to_outbound() {
     esac
 }
 
-subscription_select_outbound_by_proto() {
-    local proto="$1"
-    shift
-    printf '%s\n' "$*" | jq -c --arg p "$proto" '
-        map(select(.protocol==$p)) | first // empty'
+subscription_select_outbound_by_tag_or_proto() {
+    local tag="$1"
+    local proto="$2"
+    shift 2
+    printf '%s\n' "$*" | jq -c --arg t "$tag" --arg p "$proto" '
+        (if ($t != "") then (map(select(.tag==$t)) | first) else null end)
+        // (map(select(.protocol==$p)) | first)
+        // empty'
 }
 
 subscription_process_url_list() {
