@@ -304,6 +304,7 @@ configure_firewall_server() {
             "listen_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
             "port=" + ((.port // "") | tostring | @sh)
         '); then
+            log_warn "Skipping malformed server inbound: failed to parse JSON"
             continue
         fi
         eval "$_inbound_vars"
@@ -584,6 +585,7 @@ configure_firewall_client() {
             "dokodemo_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
             "protocols=" + ((.settings.network // "tcp") | tostring | @sh)
         '); then
+            log_warn "Skipping malformed client inbound: failed to parse JSON"
             continue
         fi
         eval "$_client_vars"
@@ -632,6 +634,7 @@ configure_firewall_client() {
                 "udp_ports=" + ((.udp // "") | tostring | @sh) + "\n" +
                 "macs=" + (([.mac[]?] | join("\n")) | @sh)
             '); then
+                log_warn "Skipping malformed policy: failed to parse JSON"
                 continue
             fi
             eval "$_policy_vars"

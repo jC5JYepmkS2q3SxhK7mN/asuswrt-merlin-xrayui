@@ -62,6 +62,7 @@ configure_tun_inbounds() {
             "tag=" + ((.tag // "tun-inbound") | tostring | @sh) + "\n" +
             "tun_name=" + ((.settings.name // "xray0") | tostring | @sh)
         '); then
+            log_warn "Skipping malformed TUN inbound: failed to parse JSON"
             continue
         fi
         eval "$_tun_vars"

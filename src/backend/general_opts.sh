@@ -16,7 +16,7 @@ apply_general_options() {
 
     local genopts=$(reconstruct_payload)
 
-    log_debug "General options recieved: $genopts"
+    log_debug "General options received: $genopts"
     # Extract all general options in a single jq call
     local github_proxy log_level logs_access logs_error logs_dns logs_dnsmasq logs_dor
     local logs_max_size skip_test clients_check debug ipsec check_connection
@@ -76,13 +76,18 @@ apply_general_options() {
         --arg loglevel "$log_level" \
         --arg access "$access_val" \
         --arg error "$error_val" \
-        --argjson dns_log "$( [ "$logs_dns" = "true" ] && echo true || echo false )" \
+        --argjson dns_log "$([ "$logs_dns" = "true" ] && echo true || echo false)" \
         '
         .log.loglevel = $loglevel
         | .log.access = $access
         | .log.error = $error
         | if $dns_log then .log.dnsLog = true else del(.log.dnsLog) end
         ')
+
+    if [ -z "$json_content" ]; then
+        log_error "Failed to build xray config JSON. Aborting."
+        return 1
+    fi
 
     echo "$json_content" >"$temp_config"
     cp "$temp_config" "$XRAY_CONFIG_FILE"
