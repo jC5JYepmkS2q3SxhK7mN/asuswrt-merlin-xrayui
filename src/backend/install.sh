@@ -158,7 +158,8 @@ EOF
         rm -f /tmp/rtls-scanner.tar.gz || log_error "Failed to remove rtls-scanner.tar.gz."
         chmod +x "$ADDON_SHARE_DIR/rtls-scanner" || log_error "Failed to make rtls-scanner executable."
 
-        wget -q --show-progress --no-hsts -O "$ADDON_SHARE_DIR/Country.mmdb" "https://github.com/Loyalsoldier/geoip/releases/latest/download/Country.mmdb"
+        local mmdb_url=$(github_proxy_url "https://github.com/Loyalsoldier/geoip/releases/latest/download/Country.mmdb")
+        wget -q --show-progress --no-hsts -O "$ADDON_SHARE_DIR/Country.mmdb" "$mmdb_url"
 
     else
         log_error "Failed to download RTLS-SCANNER."

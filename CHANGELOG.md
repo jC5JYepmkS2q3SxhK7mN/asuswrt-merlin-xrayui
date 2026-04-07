@@ -6,6 +6,7 @@
 
 - FIXED: DNS ipset `redirect` / `bypass` mode stopped working after restarting `dnsmasq` or Xray on routers that also run Diversion (or other addons that modify `dnsmasq`). Domains were no longer added to the ipset, so traffic was not routed through the proxy.
 - FIXED: Domains starting with a digit (e.g. `2ip.io`, `3com.com`) were incorrectly treated as IP addresses and ignored by the ipset feature.
+- FIXED: `Country.mmdb` download did not use the configured GitHub proxy, causing download failures or slow downloads in some regions.
 
 ## [0.66.2] - 2026-04-05
 
