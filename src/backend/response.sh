@@ -47,24 +47,9 @@ initial_response() {
     local subscription_filters="${subscription_filters:-""}"
     local probe_url="${probe_url:-https://www.google.com/generate_204}"
 
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg geoip "$geoip_date" --arg geosite "$geosite_date" --arg geoipurl "$geoipurl" --arg geositeurl "$geositeurl" \
-        '.geodata.geoip_url = $geoipurl | .geodata.geosite_url = $geositeurl | .geodata.community["geoip.dat"] = $geoip | .geodata.community["geosite.dat"] = $geosite')
-    if [ $? -ne 0 ]; then
-        log_error "Error: Failed to update JSON content with file dates."
-        return 1
-    fi
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson geo_auto_update "$geo_auto_update" '.geodata.auto_update = $geo_auto_update')
-
     local uptime_xray=$(get_proc_uptime "xray")
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson uptime "$uptime_xray" '.xray.uptime = $uptime')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg profile "$profile" '.xray.profile = $profile')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson skip_test "$skip_test" '.xray.skip_test = $skip_test')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson clients_check "$clients_check" '.xray.clients_check = $clients_check')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson check_connection "$check_connection" '.xray.check_connection = $check_connection')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg probe_url "$probe_url" '.xray.probe_url = $probe_url')
 
     local github_proxy="${github_proxy:-""}"
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg github_proxy "$github_proxy" '.xray.github_proxy = $github_proxy')
 
     local dnsmasq_enabled=false
     if [ "$logs_dnsmasq" = true ]; then
@@ -78,49 +63,18 @@ initial_response() {
         done
     fi
 
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson dnsmasq "$dnsmasq_enabled" '.xray.dnsmasq = $dnsmasq') || log_error "Error: Failed to update JSON content with dnsmasq status."
-
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson logs_dor "$logs_dor" '.xray.logs_dor = $logs_dor')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson logs_max_size "$logs_max_size" '.xray.logs_max_size = $logs_max_size')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg ipsec "$ipsec" '.xray.ipsec = $ipsec')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson startup_delay "$startup_delay" '.xray.startup_delay = $startup_delay')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson sleep_time "$xray_sleep_time" '.xray.sleep_time = $sleep_time')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg subscriptionLinks "$subscriptionLinks" '.xray.subscriptions.links = (if $subscriptionLinks == "" then [] else ($subscriptionLinks | split("|")) end)')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson xray_dns_only "$xray_dns_only" '.xray.dns_only = $xray_dns_only')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson xray_block_quic "$xray_block_quic" '.xray.block_quic = $xray_block_quic')
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq \
-        --arg sar "$subscription_auto_refresh" \
-        --arg saf "$subscription_auto_fallback" \
-        --arg sfi "$subscription_fallback_interval" \
-        --arg sf "$subscription_filters" \
-        '.xray.subscription_auto_refresh = $sar
-         | .xray.subscription_auto_fallback = ($saf == "true")
-         | .xray.subscription_fallback_interval = ($sfi | tonumber)
-         | .xray.subscriptions.filters = (if $sf == "" then [] else ($sf | split("|")) end)')
-
     # grab firewall hooks
     local hook_before_firewall_start=$(sed '1{/^#!/d}' "$ADDON_USER_SCRIPTS_DIR/firewall_before_start" 2>/dev/null || echo "")
     local after_firewall_start=$(sed '1{/^#!/d}' "$ADDON_USER_SCRIPTS_DIR/firewall_after_start" 2>/dev/null || echo "")
     local after_firewall_cleanup=$(sed '1{/^#!/d}' "$ADDON_USER_SCRIPTS_DIR/firewall_after_cleanup" 2>/dev/null || echo "")
 
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg hook_before_firewall_start "$hook_before_firewall_start" \
-        --arg after_firewall_start "$after_firewall_start" \
-        --arg after_firewall_cleanup "$after_firewall_cleanup" \
-        '.xray.hooks = {
-            before_firewall_start: $hook_before_firewall_start,
-            after_firewall_start: $after_firewall_start,
-            after_firewall_cleanup: $after_firewall_cleanup
-        }') || log_error "Error: Failed to update JSON content with firewall hooks."
-
     local XRAY_VERSION=$(xray version | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1) || log_error "Error: Failed to get Xray version."
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --arg xray_ver "$XRAY_VERSION" --arg xrayui_ver "$XRAYUI_VERSION" '.xray.ui_version = $xrayui_ver | .xray.core_version = $xray_ver')
 
     # Collect the names of all JSON files from /opt/etc/xray
     local profiles=$(find /opt/etc/xray -maxdepth 1 -type f -name "*.json" -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')
     if [ -z "$profiles" ]; then
         profiles="[]"
     fi
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson profiles "$profiles" '.xray.profiles = $profiles') || log_error "Error: Failed to update JSON content with profiles."
 
     # Collect the backups
     local backups=$(
@@ -128,20 +82,91 @@ initial_response() {
             -printf "%T@ %f\n" | sort -nr | awk '{print $2}' |
             jq -R -s -c 'split("\n")[:-1]'
     )
-
     [ -z "$backups" ] && backups="[]"
 
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson backups "$backups" '.xray.backups = $backups')
-
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq 'del(.loading)')
-
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson debug "$debug" '.xray.debug = $debug')
-
     # integrations
-    if [ -f /jffs/scripts/scribe ]; then
-        UI_RESPONSE=$(echo "$UI_RESPONSE" | jq --argjson integration_scribe "$integration_scribe" '.integration.scribe = {
-            enabled: $integration_scribe,
-        }')
+    local has_scribe=false
+    [ -f /jffs/scripts/scribe ] && has_scribe=true
+
+    # Single jq call to build the entire response
+    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq \
+        --arg geoip "$geoip_date" \
+        --arg geosite "$geosite_date" \
+        --arg geoipurl "$geoipurl" \
+        --arg geositeurl "$geositeurl" \
+        --argjson geo_auto_update "$geo_auto_update" \
+        --argjson uptime "$uptime_xray" \
+        --arg profile "$profile" \
+        --argjson skip_test "$skip_test" \
+        --argjson clients_check "$clients_check" \
+        --argjson check_connection "$check_connection" \
+        --arg probe_url "$probe_url" \
+        --arg github_proxy "$github_proxy" \
+        --argjson dnsmasq "$dnsmasq_enabled" \
+        --argjson logs_dor "$logs_dor" \
+        --argjson logs_max_size "$logs_max_size" \
+        --arg ipsec "$ipsec" \
+        --argjson startup_delay "$startup_delay" \
+        --argjson sleep_time "$xray_sleep_time" \
+        --arg subscriptionLinks "$subscriptionLinks" \
+        --argjson xray_dns_only "$xray_dns_only" \
+        --argjson xray_block_quic "$xray_block_quic" \
+        --arg sar "$subscription_auto_refresh" \
+        --arg saf "$subscription_auto_fallback" \
+        --arg sfi "$subscription_fallback_interval" \
+        --arg sf "$subscription_filters" \
+        --arg hook_before_firewall_start "$hook_before_firewall_start" \
+        --arg after_firewall_start "$after_firewall_start" \
+        --arg after_firewall_cleanup "$after_firewall_cleanup" \
+        --arg xray_ver "$XRAY_VERSION" \
+        --arg xrayui_ver "$XRAYUI_VERSION" \
+        --argjson profiles "$profiles" \
+        --argjson backups "$backups" \
+        --argjson debug "$debug" \
+        --argjson has_scribe "$has_scribe" \
+        --argjson integration_scribe "$integration_scribe" \
+        '
+        .geodata.geoip_url = $geoipurl
+        | .geodata.geosite_url = $geositeurl
+        | .geodata.community["geoip.dat"] = $geoip
+        | .geodata.community["geosite.dat"] = $geosite
+        | .geodata.auto_update = $geo_auto_update
+        | .xray.uptime = $uptime
+        | .xray.profile = $profile
+        | .xray.skip_test = $skip_test
+        | .xray.clients_check = $clients_check
+        | .xray.check_connection = $check_connection
+        | .xray.probe_url = $probe_url
+        | .xray.github_proxy = $github_proxy
+        | .xray.dnsmasq = $dnsmasq
+        | .xray.logs_dor = $logs_dor
+        | .xray.logs_max_size = $logs_max_size
+        | .xray.ipsec = $ipsec
+        | .xray.startup_delay = $startup_delay
+        | .xray.sleep_time = $sleep_time
+        | .xray.subscriptions.links = (if $subscriptionLinks == "" then [] else ($subscriptionLinks | split("|")) end)
+        | .xray.dns_only = $xray_dns_only
+        | .xray.block_quic = $xray_block_quic
+        | .xray.subscription_auto_refresh = $sar
+        | .xray.subscription_auto_fallback = ($saf == "true")
+        | .xray.subscription_fallback_interval = ($sfi | tonumber)
+        | .xray.subscriptions.filters = (if $sf == "" then [] else ($sf | split("|")) end)
+        | .xray.hooks = {
+            before_firewall_start: $hook_before_firewall_start,
+            after_firewall_start: $after_firewall_start,
+            after_firewall_cleanup: $after_firewall_cleanup
+        }
+        | .xray.ui_version = $xrayui_ver
+        | .xray.core_version = $xray_ver
+        | .xray.profiles = $profiles
+        | .xray.backups = $backups
+        | .xray.debug = $debug
+        | if $has_scribe then .integration.scribe = { enabled: $integration_scribe } else . end
+        | del(.loading)
+        ')
+    if [ $? -ne 0 ]; then
+        log_error "Error: Failed to build initial response JSON."
+        return 1
     fi
 
     save_ui_response

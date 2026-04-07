@@ -57,8 +57,10 @@ configure_tun_inbounds() {
         [ -z "$inbound" ] && continue
 
         local tun_name tun_addresses tun_routes tag
-        tag=$(echo "$inbound" | jq -r '.tag // "tun-inbound"')
-        tun_name=$(echo "$inbound" | jq -r '.settings.name // "xray0"')
+        eval "$(echo "$inbound" | jq -r '
+            "tag=" + ((.tag // "tun-inbound") | @sh) + "\n" +
+            "tun_name=" + ((.settings.name // "xray0") | @sh)
+        ')"
         tun_addresses=$(echo "$inbound" | jq -r '.settings.address // [] | .[]')
         tun_routes=$(echo "$inbound" | jq -r '.settings.routes // [] | .[]')
 

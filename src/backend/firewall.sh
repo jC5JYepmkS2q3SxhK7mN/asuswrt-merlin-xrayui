@@ -296,16 +296,18 @@ configure_firewall_server() {
 
     # Iterate over all inbounds
     jq -c '.inbounds[]' "$XRAY_CONFIG_FILE" | while IFS= read -r inbound; do
-        local tag=$(echo "$inbound" | jq -r '.tag // empty')
-        local protocol=$(echo "$inbound" | jq -r '.protocol // empty')
-        local listen_addr=$(echo "$inbound" | jq -r '.listen // "0.0.0.0"')
+        local tag protocol listen_addr port
+        eval "$(echo "$inbound" | jq -r '
+            "tag=" + ((.tag // "") | @sh) + "\n" +
+            "protocol=" + ((.protocol // "") | @sh) + "\n" +
+            "listen_addr=" + ((.listen // "0.0.0.0") | @sh) + "\n" +
+            "port=" + ((.port // "") | tostring | @sh)
+        ')"
 
-        # Skip inbounds with tags starting with 'dokodemo-door' protocol
+        # Skip inbounds with 'dokodemo-door' protocol
         if [ "$protocol" = "dokodemo-door" ]; then
             continue
         fi
-
-        local port=$(echo "$inbound" | jq -r '.port // empty')
         if [ -z "$port" ]; then
             log_warn "No valid port found for inbound with tag $tag. Skipping."
             continue
@@ -571,9 +573,12 @@ configure_firewall_client() {
     # Start Redirecting traffic to the xray
 
     while IFS= read -r inbound; do
-        local dokodemo_port=$(echo "$inbound" | jq -r '.port // empty')
-        local dokodemo_addr=$(echo "$inbound" | jq -r '.listen // "0.0.0.0"')
-        local protocols=$(echo "$inbound" | jq -r '.settings.network // "tcp"')
+        local dokodemo_port dokodemo_addr protocols
+        eval "$(echo "$inbound" | jq -r '
+            "dokodemo_port=" + ((.port // "") | tostring | @sh) + "\n" +
+            "dokodemo_addr=" + ((.listen // "0.0.0.0") | @sh) + "\n" +
+            "protocols=" + ((.settings.network // "tcp") | @sh)
+        ')"
 
         if [ -z "$dokodemo_port" ]; then
             log_warn "$IPT_TYPE inbound missing valid port. Skipping."
@@ -611,11 +616,13 @@ configure_firewall_client() {
         log_info "Apply $IPT_TYPE rules for inbound on port $dokodemo_port with protocols '$protocols'."
 
         while IFS= read -r policy; do
-            policy_name="$(echo "$policy" | jq -r '.name')"
-            policy_mode="$(echo "$policy" | jq -r '.mode // "bypass"')"
-            tcp_ports="$(echo "$policy" | jq -r '.tcp // ""')"
-            udp_ports="$(echo "$policy" | jq -r '.udp // ""')"
-            macs=$(echo "$policy" | jq -r '.mac[]?')
+            eval "$(echo "$policy" | jq -r '
+                "policy_name=" + ((.name // "") | @sh) + "\n" +
+                "policy_mode=" + ((.mode // "bypass") | @sh) + "\n" +
+                "tcp_ports=" + ((.tcp // "") | @sh) + "\n" +
+                "udp_ports=" + ((.udp // "") | @sh) + "\n" +
+                "macs=" + (([.mac[]?] | join("\n")) | @sh)
+            ')"
 
             [ -z "$macs" ] && macs="ANY"
 
