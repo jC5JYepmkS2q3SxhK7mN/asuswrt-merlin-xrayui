@@ -2,9 +2,15 @@
 # shellcheck disable=SC2034  # codacy:Unused variables
 
 initial_response() {
-    load_ui_response
     load_xrayui_config
     log_debug "Initial response started."
+
+    # Ensure the response file exists
+    if [ ! -f "$UI_RESPONSE_FILE" ]; then
+        log_ok "Creating $ADDON_TITLE response file: $UI_RESPONSE_FILE"
+        echo '{}' >"$UI_RESPONSE_FILE"
+        chmod 600 "$UI_RESPONSE_FILE"
+    fi
 
     local geoip_file="/opt/sbin/geoip.dat"
     local geosite_file="/opt/sbin/geosite.dat"
@@ -88,8 +94,9 @@ initial_response() {
     local has_scribe=false
     [ -f /jffs/scripts/scribe ] && has_scribe=true
 
-    # Single jq call to build the entire response
-    UI_RESPONSE=$(echo "$UI_RESPONSE" | jq \
+    # Single jq call reading directly from file — avoids shell variable / pipe overhead
+    local _tmp_response="/tmp/xray-response.tmp"
+    if ! jq \
         --arg geoip "$geoip_date" \
         --arg geosite "$geosite_date" \
         --arg geoipurl "$geoipurl" \
@@ -163,18 +170,20 @@ initial_response() {
         | .xray.debug = $debug
         | if $has_scribe then .integration.scribe = { enabled: $integration_scribe } else . end
         | del(.loading)
-        ')
-    if [ $? -ne 0 ]; then
-        log_error "Error: Failed to build initial response JSON."
-        return 1
+        ' "$UI_RESPONSE_FILE" >"$_tmp_response"; then
+        log_error "Error: Failed to build initial response JSON. Building minimal response."
+        rm -f "$_tmp_response"
+        # Build a minimal but functional response without jq so the UI is not broken
+        cat >"$_tmp_response" <<MINEOF
+{"geodata":{"geoip_url":"$geoipurl","geosite_url":"$geositeurl","community":{"geoip.dat":"$geoip_date","geosite.dat":"$geosite_date"},"auto_update":$geo_auto_update},"xray":{"uptime":$uptime_xray,"profile":"$profile","skip_test":$skip_test,"clients_check":$clients_check,"check_connection":$check_connection,"probe_url":"$probe_url","github_proxy":"$github_proxy","dnsmasq":$dnsmasq_enabled,"logs_dor":$logs_dor,"logs_max_size":$logs_max_size,"ipsec":"$ipsec","startup_delay":$startup_delay,"sleep_time":$xray_sleep_time,"dns_only":$xray_dns_only,"block_quic":$xray_block_quic,"subscription_auto_refresh":"$subscription_auto_refresh","subscription_auto_fallback":false,"subscription_fallback_interval":$subscription_fallback_interval,"subscriptions":{"links":[],"filters":[]},"hooks":{},"ui_version":"$XRAYUI_VERSION","core_version":"$XRAY_VERSION","profiles":${profiles:-[]},"backups":${backups:-[]},"debug":$debug}}
+MINEOF
     fi
 
-    save_ui_response
-
-    if [ $? -eq 0 ]; then
+    if mv -f "$_tmp_response" "$UI_RESPONSE_FILE"; then
         log_ok "Saved initial response successfully."
     else
         log_error "Failed to save file to $UI_RESPONSE_FILE."
+        rm -f "$_tmp_response"
         return 1
     fi
 }

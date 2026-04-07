@@ -237,6 +237,11 @@ save_ui_response() {
 
     log_debug "Saving UI response to $UI_RESPONSE_FILE"
 
+    if [ -z "$UI_RESPONSE" ]; then
+        log_error "UI_RESPONSE is empty, refusing to overwrite $UI_RESPONSE_FILE"
+        return 1
+    fi
+
     if ! echo "$UI_RESPONSE" >"$UI_RESPONSE_FILE"; then
         log_error "Failed to save UI response to $UI_RESPONSE_FILE"
         clear_lock
@@ -274,6 +279,7 @@ test_xray_config() {
     load_ui_response
 
     local json_content=$(jq --arg msg "$message" '.xray.test = $msg' "$UI_RESPONSE_FILE")
+    [ -z "$json_content" ] && return
     echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
 }
 
@@ -305,6 +311,8 @@ update_loading_progress() {
         ')
     fi
 
+    [ -z "$json_content" ] && return
+
     echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
 
     if [ "$progress" = "100" ]; then
@@ -328,6 +336,8 @@ remove_loading_progress() {
     json_content=$(echo "$json_content" | jq '
             del(.loading)
         ')
+
+    [ -z "$json_content" ] && return
 
     echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
 }
