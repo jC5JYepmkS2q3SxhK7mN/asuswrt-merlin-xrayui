@@ -2,7 +2,9 @@
 # shellcheck disable=SC2034  # codacy:Unused variables
 
 dnsmasq_configure() {
-    local CONFIG=$1
+    # Fallback to /etc/dnsmasq.conf if $1 is empty (can happen when another
+    # addon sourced in dnsmasq.postconf clobbers the positional parameters)
+    local CONFIG="${1:-/etc/dnsmasq.conf}"
 
     load_ui_response
     load_xrayui_config
@@ -121,13 +123,15 @@ dnsmasq_xray_ipset_domains() {
 
         while IFS= read -r entry; do
             case "$entry" in
-            regexp:* | regex:*) ;;
+            regexp:* | regex:* | keyword:*) ;;
             geosite:*) tags_list="$tags_list ${entry#geosite:}" ;;
             geoip:*) ip_list="$ip_list ${entry#geoip:}" ;;
             ext:xrayui:*) tags_xrayui_list="$tags_xrayui_list ${entry#ext:xrayui:}" ;;
             domain:*) dnsmasq_domain_to_ipset "${entry#domain:}" "$SET_V4" "$SET_V6" ;;
+            full:*) dnsmasq_domain_to_ipset "${entry#full:}" "$SET_V4" "$SET_V6" ;;
             .*) dnsmasq_domain_to_ipset "${entry#.}" "$SET_V4" "$SET_V6" ;;
-            [0-9]* | *:*) ip_list="$ip_list ${entry}" ;;
+            [0-9]*.[0-9]*.[0-9]*.[0-9]*) ip_list="$ip_list ${entry}" ;;
+            *:*) ip_list="$ip_list ${entry}" ;;
             *.*) dnsmasq_domain_to_ipset "$entry" "$SET_V4" "$SET_V6" ;;
             esac
         done <<EOF
