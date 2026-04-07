@@ -10,12 +10,17 @@ rtls_scan_start() {
     local rtlsrequest=$(reconstruct_payload)
 
     local rtlsipaddr rtlscidr rtls_timeout rtls_threads
-    eval "$(echo "$rtlsrequest" | jq -r '
+    local _rtls_vars
+    if ! _rtls_vars=$(echo "$rtlsrequest" | jq -r '
         "rtlsipaddr=" + ((.ip // "") | tostring | @sh) + "\n" +
         "rtlscidr=" + ((.cidr // "") | tostring | @sh) + "\n" +
         "rtls_timeout=" + ((.timeout // "") | tostring | @sh) + "\n" +
         "rtls_threads=" + ((.threads // "") | tostring | @sh)
-    ')"
+    '); then
+        log_error "Failed to parse RTLS scan parameters."
+        return 1
+    fi
+    eval "$_rtls_vars"
 
     log_debug "RTLS scan parameters: IP=$rtlsipaddr, CIDR=$rtlscidr, Timeout=$rtls_timeout, Threads=$rtls_threads"
 

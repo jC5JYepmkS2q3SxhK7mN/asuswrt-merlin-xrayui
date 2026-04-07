@@ -167,7 +167,8 @@ subscription_parse_vmess() {
     j=$(echo "$payload" | base64 -d 2>/dev/null) || return 1
 
     local add port id ps aid scy tls net path hdr qhost
-    eval "$(echo "$j" | jq -r '
+    local _vmess_vars
+    if ! _vmess_vars=$(echo "$j" | jq -r '
         "add=" + ((.add // "") | tostring | @sh) + "\n" +
         "port=" + ((.port // 0) | tostring | @sh) + "\n" +
         "id=" + ((.id // "") | tostring | @sh) + "\n" +
@@ -179,7 +180,10 @@ subscription_parse_vmess() {
         "path=" + ((.path // "") | tostring | @sh) + "\n" +
         "hdr=" + ((.type // "") | tostring | @sh) + "\n" +
         "qhost=" + ((.host // "") | tostring | @sh)
-    ')"
+    '); then
+        return 1
+    fi
+    eval "$_vmess_vars"
 
     local seed=""
     [ "$net" = "kcp" ] && seed="$path"

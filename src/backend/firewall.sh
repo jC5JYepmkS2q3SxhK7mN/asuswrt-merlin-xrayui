@@ -297,12 +297,16 @@ configure_firewall_server() {
     # Iterate over all inbounds
     jq -c '.inbounds[]' "$XRAY_CONFIG_FILE" | while IFS= read -r inbound; do
         local tag protocol listen_addr port
-        eval "$(echo "$inbound" | jq -r '
-            "tag=" + ((.tag // "") | @sh) + "\n" +
-            "protocol=" + ((.protocol // "") | @sh) + "\n" +
-            "listen_addr=" + ((.listen // "0.0.0.0") | @sh) + "\n" +
+        local _inbound_vars
+        if ! _inbound_vars=$(echo "$inbound" | jq -r '
+            "tag=" + ((.tag // "") | tostring | @sh) + "\n" +
+            "protocol=" + ((.protocol // "") | tostring | @sh) + "\n" +
+            "listen_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
             "port=" + ((.port // "") | tostring | @sh)
-        ')"
+        '); then
+            continue
+        fi
+        eval "$_inbound_vars"
 
         # Skip inbounds with 'dokodemo-door' protocol
         if [ "$protocol" = "dokodemo-door" ]; then
@@ -574,11 +578,15 @@ configure_firewall_client() {
 
     while IFS= read -r inbound; do
         local dokodemo_port dokodemo_addr protocols
-        eval "$(echo "$inbound" | jq -r '
+        local _client_vars
+        if ! _client_vars=$(echo "$inbound" | jq -r '
             "dokodemo_port=" + ((.port // "") | tostring | @sh) + "\n" +
-            "dokodemo_addr=" + ((.listen // "0.0.0.0") | @sh) + "\n" +
-            "protocols=" + ((.settings.network // "tcp") | @sh)
-        ')"
+            "dokodemo_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
+            "protocols=" + ((.settings.network // "tcp") | tostring | @sh)
+        '); then
+            continue
+        fi
+        eval "$_client_vars"
 
         if [ -z "$dokodemo_port" ]; then
             log_warn "$IPT_TYPE inbound missing valid port. Skipping."
@@ -616,13 +624,17 @@ configure_firewall_client() {
         log_info "Apply $IPT_TYPE rules for inbound on port $dokodemo_port with protocols '$protocols'."
 
         while IFS= read -r policy; do
-            eval "$(echo "$policy" | jq -r '
-                "policy_name=" + ((.name // "") | @sh) + "\n" +
-                "policy_mode=" + ((.mode // "bypass") | @sh) + "\n" +
-                "tcp_ports=" + ((.tcp // "") | @sh) + "\n" +
-                "udp_ports=" + ((.udp // "") | @sh) + "\n" +
+            local _policy_vars
+            if ! _policy_vars=$(echo "$policy" | jq -r '
+                "policy_name=" + ((.name // "") | tostring | @sh) + "\n" +
+                "policy_mode=" + ((.mode // "bypass") | tostring | @sh) + "\n" +
+                "tcp_ports=" + ((.tcp // "") | tostring | @sh) + "\n" +
+                "udp_ports=" + ((.udp // "") | tostring | @sh) + "\n" +
                 "macs=" + (([.mac[]?] | join("\n")) | @sh)
-            ')"
+            '); then
+                continue
+            fi
+            eval "$_policy_vars"
 
             [ -z "$macs" ] && macs="ANY"
 

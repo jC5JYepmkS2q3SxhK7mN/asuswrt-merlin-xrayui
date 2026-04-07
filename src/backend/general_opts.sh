@@ -18,36 +18,47 @@ apply_general_options() {
 
     log_debug "General options recieved: $genopts"
     # Extract all general options in a single jq call
-    eval "$(echo "$genopts" | jq -r '
-        "github_proxy=" + ((.github_proxy // "") | @sh) + "\n" +
-        "log_level=" + ((.logs_level // "warning") | @sh) + "\n" +
-        "logs_access=" + ((.logs_access // "false") | @sh) + "\n" +
-        "logs_error=" + ((.logs_error // "false") | @sh) + "\n" +
-        "logs_dns=" + ((.logs_dns // "false") | @sh) + "\n" +
-        "logs_dnsmasq=" + ((.logs_dnsmasq // "false") | @sh) + "\n" +
-        "logs_dor=" + ((.logs_dor // "false") | @sh) + "\n" +
+    local github_proxy log_level logs_access logs_error logs_dns logs_dnsmasq logs_dor
+    local logs_max_size skip_test clients_check debug ipsec check_connection
+    local startup_delay xray_sleep_time geosite_url geoip_url geo_auto_update hooks
+    local subscriptionLinks xray_dns_only xray_block_quic integration_scribe
+    local subscription_auto_refresh subscription_auto_fallback
+    local subscription_fallback_interval probe_url subscription_filters
+    local _genopts_vars
+    if ! _genopts_vars=$(echo "$genopts" | jq -r '
+        "github_proxy=" + ((.github_proxy // "") | tostring | @sh) + "\n" +
+        "log_level=" + ((.logs_level // "warning") | tostring | @sh) + "\n" +
+        "logs_access=" + ((.logs_access // "false") | tostring | @sh) + "\n" +
+        "logs_error=" + ((.logs_error // "false") | tostring | @sh) + "\n" +
+        "logs_dns=" + ((.logs_dns // "false") | tostring | @sh) + "\n" +
+        "logs_dnsmasq=" + ((.logs_dnsmasq // "false") | tostring | @sh) + "\n" +
+        "logs_dor=" + ((.logs_dor // "false") | tostring | @sh) + "\n" +
         "logs_max_size=" + ((.logs_max_size // 10) | tostring | @sh) + "\n" +
-        "skip_test=" + ((.skip_test // "false") | @sh) + "\n" +
-        "clients_check=" + ((.clients_check // "false") | @sh) + "\n" +
-        "debug=" + ((.debug // "false") | @sh) + "\n" +
-        "ipsec=" + ((.ipsec // "off") | @sh) + "\n" +
-        "check_connection=" + ((.check_connection // "false") | @sh) + "\n" +
+        "skip_test=" + ((.skip_test // "false") | tostring | @sh) + "\n" +
+        "clients_check=" + ((.clients_check // "false") | tostring | @sh) + "\n" +
+        "debug=" + ((.debug // "false") | tostring | @sh) + "\n" +
+        "ipsec=" + ((.ipsec // "off") | tostring | @sh) + "\n" +
+        "check_connection=" + ((.check_connection // "false") | tostring | @sh) + "\n" +
         "startup_delay=" + ((.startup_delay // 0) | tostring | @sh) + "\n" +
         "xray_sleep_time=" + ((.sleep_time // 10) | tostring | @sh) + "\n" +
-        "geosite_url=" + ((.geo_site_url // "") | @sh) + "\n" +
-        "geoip_url=" + ((.geo_ip_url // "") | @sh) + "\n" +
-        "geo_auto_update=" + ((.geo_auto_update // "false") | @sh) + "\n" +
+        "geosite_url=" + ((.geo_site_url // "") | tostring | @sh) + "\n" +
+        "geoip_url=" + ((.geo_ip_url // "") | tostring | @sh) + "\n" +
+        "geo_auto_update=" + ((.geo_auto_update // "false") | tostring | @sh) + "\n" +
         "hooks=" + ((.hooks // {}) | tojson | @sh) + "\n" +
         "subscriptionLinks=" + (((.subscriptions.links // []) | join("|")) | @sh) + "\n" +
-        "xray_dns_only=" + ((.dns_only // "false") | @sh) + "\n" +
-        "xray_block_quic=" + ((.block_quic // "false") | @sh) + "\n" +
-        "integration_scribe=" + ((.logs_scribe // "false") | @sh) + "\n" +
-        "subscription_auto_refresh=" + ((.subscription_auto_refresh // "disabled") | @sh) + "\n" +
-        "subscription_auto_fallback=" + ((.subscription_auto_fallback // "false") | @sh) + "\n" +
-        "subscription_fallback_interval=" + ((.subscription_fallback_interval // "5") | @sh) + "\n" +
-        "probe_url=" + ((.probe_url // "https://www.google.com/generate_204") | @sh) + "\n" +
+        "xray_dns_only=" + ((.dns_only // "false") | tostring | @sh) + "\n" +
+        "xray_block_quic=" + ((.block_quic // "false") | tostring | @sh) + "\n" +
+        "integration_scribe=" + ((.logs_scribe // "false") | tostring | @sh) + "\n" +
+        "subscription_auto_refresh=" + ((.subscription_auto_refresh // "disabled") | tostring | @sh) + "\n" +
+        "subscription_auto_fallback=" + ((.subscription_auto_fallback // "false") | tostring | @sh) + "\n" +
+        "subscription_fallback_interval=" + ((.subscription_fallback_interval // "5") | tostring | @sh) + "\n" +
+        "probe_url=" + ((.probe_url // "https://www.google.com/generate_204") | tostring | @sh) + "\n" +
         "subscription_filters=" + (((.subscriptions.filters // []) | join("|")) | @sh)
-    ')"
+    '); then
+        log_error "Failed to parse general options payload."
+        return 1
+    fi
+    eval "$_genopts_vars"
 
     if [ ! -d "$ADDON_LOGS_DIR" ]; then
         mkdir -p "$ADDON_LOGS_DIR"
@@ -142,11 +153,16 @@ apply_general_options_hooks() {
     [ "$hooks_json" = "null" ] && hooks_json="{}"
 
     local before after cleanup
-    eval "$(printf '%s' "$hooks_json" | jq -r '
-        "before=" + ((.before_firewall_start // "") | @sh) + "\n" +
-        "after=" + ((.after_firewall_start // "") | @sh) + "\n" +
-        "cleanup=" + ((.after_firewall_cleanup // "") | @sh)
-    ')"
+    local _hooks_vars
+    if ! _hooks_vars=$(printf '%s' "$hooks_json" | jq -r '
+        "before=" + ((.before_firewall_start // "") | tostring | @sh) + "\n" +
+        "after=" + ((.after_firewall_start // "") | tostring | @sh) + "\n" +
+        "cleanup=" + ((.after_firewall_cleanup // "") | tostring | @sh)
+    '); then
+        log_error "Failed to parse hooks payload."
+        return 1
+    fi
+    eval "$_hooks_vars"
 
     local script_before="$ADDON_USER_SCRIPTS_DIR/firewall_before_start"
     local script_after="$ADDON_USER_SCRIPTS_DIR/firewall_after_start"
