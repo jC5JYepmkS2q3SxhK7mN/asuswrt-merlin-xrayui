@@ -5,12 +5,8 @@ initial_response() {
     load_xrayui_config
     log_debug "Initial response started."
 
-    # Ensure the response file exists
-    if [ ! -f "$UI_RESPONSE_FILE" ]; then
-        log_ok "Creating $ADDON_TITLE response file: $UI_RESPONSE_FILE"
-        echo '{}' >"$UI_RESPONSE_FILE"
-        chmod 600 "$UI_RESPONSE_FILE"
-    fi
+    # Ensure the response file exists and contains valid JSON
+    load_ui_response
 
     local geoip_file="/opt/sbin/geoip.dat"
     local geosite_file="/opt/sbin/geosite.dat"
@@ -95,7 +91,7 @@ initial_response() {
     [ -f /jffs/scripts/scribe ] && has_scribe=true
 
     # Single jq call reading directly from file — avoids shell variable / pipe overhead
-    local _tmp_response="/tmp/xray-response.tmp"
+    local _tmp_response="/tmp/xray-response.$$.tmp"
     if ! jq \
         --arg geoip "$geoip_date" \
         --arg geosite "$geosite_date" \
@@ -173,10 +169,42 @@ initial_response() {
         ' "$UI_RESPONSE_FILE" >"$_tmp_response"; then
         log_error "Error: Failed to build initial response JSON. Building minimal response."
         rm -f "$_tmp_response"
-        # Build a minimal but functional response without jq so the UI is not broken
-        cat >"$_tmp_response" <<MINEOF
-{"geodata":{"geoip_url":"$geoipurl","geosite_url":"$geositeurl","community":{"geoip.dat":"$geoip_date","geosite.dat":"$geosite_date"},"auto_update":$geo_auto_update},"xray":{"uptime":$uptime_xray,"profile":"$profile","skip_test":$skip_test,"clients_check":$clients_check,"check_connection":$check_connection,"probe_url":"$probe_url","github_proxy":"$github_proxy","dnsmasq":$dnsmasq_enabled,"logs_dor":$logs_dor,"logs_max_size":$logs_max_size,"ipsec":"$ipsec","startup_delay":$startup_delay,"sleep_time":$xray_sleep_time,"dns_only":$xray_dns_only,"block_quic":$xray_block_quic,"subscription_auto_refresh":"$subscription_auto_refresh","subscription_auto_fallback":false,"subscription_fallback_interval":$subscription_fallback_interval,"subscriptions":{"links":[],"filters":[]},"hooks":{},"ui_version":"$XRAYUI_VERSION","core_version":"$XRAY_VERSION","profiles":${profiles:-[]},"backups":${backups:-[]},"debug":$debug}}
-MINEOF
+        if ! jq -n \
+            --arg geoipurl "$geoipurl" \
+            --arg geositeurl "$geositeurl" \
+            --arg geoip "$geoip_date" \
+            --arg geosite "$geosite_date" \
+            --argjson geo_auto_update "$geo_auto_update" \
+            --argjson uptime "$uptime_xray" \
+            --arg profile "$profile" \
+            --argjson skip_test "$skip_test" \
+            --argjson clients_check "$clients_check" \
+            --argjson check_connection "$check_connection" \
+            --arg probe_url "$probe_url" \
+            --arg github_proxy "$github_proxy" \
+            --argjson dnsmasq "$dnsmasq_enabled" \
+            --argjson logs_dor "$logs_dor" \
+            --argjson logs_max_size "$logs_max_size" \
+            --arg ipsec "$ipsec" \
+            --argjson startup_delay "$startup_delay" \
+            --argjson sleep_time "$xray_sleep_time" \
+            --argjson dns_only "$xray_dns_only" \
+            --argjson block_quic "$xray_block_quic" \
+            --arg sar "$subscription_auto_refresh" \
+            --arg saf "$subscription_auto_fallback" \
+            --arg sfi "$subscription_fallback_interval" \
+            --arg xrayui_ver "$XRAYUI_VERSION" \
+            --arg xray_ver "$XRAY_VERSION" \
+            --argjson profiles "${profiles:-[]}" \
+            --argjson backups "${backups:-[]}" \
+            --argjson debug "$debug" \
+            '{
+                geodata: { geoip_url: $geoipurl, geosite_url: $geositeurl, community: { "geoip.dat": $geoip, "geosite.dat": $geosite }, auto_update: $geo_auto_update },
+                xray: { uptime: $uptime, profile: $profile, skip_test: $skip_test, clients_check: $clients_check, check_connection: $check_connection, probe_url: $probe_url, github_proxy: $github_proxy, dnsmasq: $dnsmasq, logs_dor: $logs_dor, logs_max_size: $logs_max_size, ipsec: $ipsec, startup_delay: $startup_delay, sleep_time: $sleep_time, dns_only: $dns_only, block_quic: $block_quic, subscription_auto_refresh: $sar, subscription_auto_fallback: ($saf == "true"), subscription_fallback_interval: ($sfi | tonumber), subscriptions: { links: [], filters: [] }, hooks: {}, ui_version: $xrayui_ver, core_version: $xray_ver, profiles: $profiles, backups: $backups, debug: $debug }
+            }' >"$_tmp_response"; then
+            log_error "Error: jq -n also failed. Writing bare minimum response."
+            echo '{"xray":{"ui_version":"'"$XRAYUI_VERSION"'","core_version":"","profiles":[],"backups":[]}}' >"$_tmp_response"
+        fi
     fi
 
     if mv -f "$_tmp_response" "$UI_RESPONSE_FILE"; then

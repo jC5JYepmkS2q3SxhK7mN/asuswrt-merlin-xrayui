@@ -295,6 +295,7 @@ export class Engine {
   public xrayConfig: XrayObject = xrayConfig;
   public mode = 'server';
   private readonly zero_uuid = '10000000-1000-4000-8000-100000000000';
+  private subscriptionsNotFound = false;
 
   private splitPayload(payload: string, chunkSize: number): string[] {
     const chunks: string[] = [];
@@ -485,7 +486,7 @@ export class Engine {
     return responseConfig;
   }
 
-  async getXrayResponse(): Promise<EngineResponseConfig> {
+  async getXrayResponse({ light = false }: { light?: boolean } = {}): Promise<EngineResponseConfig> {
     const response = await axios.get<EngineResponseConfig>(`/ext/xrayui/xray-ui-response.json?_=${Date.now()}`, {
       headers: {
         'Cache-Control': 'no-cache',
@@ -494,12 +495,17 @@ export class Engine {
       }
     });
     let responseConfig = response.data;
-    await this.loadSubscriptions(responseConfig);
-    this.loadGeoTags();
+    if (!light) {
+      await this.loadSubscriptions(responseConfig);
+      this.loadGeoTags();
+    }
     return responseConfig;
   }
 
   async loadSubscriptions(resp: EngineResponseConfig): Promise<EngineSubscriptions | undefined> {
+    if (this.subscriptionsNotFound) {
+      return new EngineSubscriptions();
+    }
     try {
       const response = await axios.get<Record<string, string[]>>(`/ext/xrayui/subscriptions.json?_=${Date.now()}`, {
         headers: {
@@ -508,15 +514,22 @@ export class Engine {
           Expires: '0'
         }
       });
+      this.subscriptionsNotFound = false;
       if (resp.xray) {
         resp.xray.subscriptions ??= new EngineSubscriptions();
         resp.xray.subscriptions.protocols = response.data;
         return resp.xray.subscriptions;
       }
-    } catch {
-      // subscriptions.json may not exist yet — not an error
+    } catch (e: any) {
+      if (e?.response?.status === 404) {
+        this.subscriptionsNotFound = true;
+      }
     }
     return new EngineSubscriptions();
+  }
+
+  resetSubscriptionsCache(): void {
+    this.subscriptionsNotFound = false;
   }
 
   async loadGeoTags(): Promise<EngineGeoTags | undefined> {
@@ -564,7 +577,7 @@ export class Engine {
     return new Promise((resolve, reject) => {
       const checkProgressInterval = setInterval(async () => {
         try {
-          const response = await this.getXrayResponse();
+          const response = await this.getXrayResponse({ light: true });
           if (response.loading) {
             loadingProgress = response.loading;
             window.updateLoadingProgress(loadingProgress);
@@ -646,9 +659,7 @@ export class Engine {
             server = dnsServers[index];
             if (server instanceof XrayDnsServerObject && server.rules?.length) {
               server.domains = [];
-              server.rules = (server.rules as unknown as number[])
-                .map((ruleIdx) => rulesMap.get(ruleIdx))
-                .filter((r): r is XrayRoutingRuleObject => r !== undefined);
+              server.rules = (server.rules as unknown as number[]).map((ruleIdx) => rulesMap.get(ruleIdx)).filter((r): r is XrayRoutingRuleObject => r !== undefined);
             }
           });
         }

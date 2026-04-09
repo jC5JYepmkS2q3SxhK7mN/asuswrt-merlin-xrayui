@@ -280,9 +280,13 @@ test_xray_config() {
 
     load_ui_response
 
-    local json_content=$(jq --arg msg "$message" '.xray.test = $msg' "$UI_RESPONSE_FILE")
-    [ -z "$json_content" ] && return
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    local json_content
+    json_content=$(jq --arg msg "$message" '.xray.test = $msg' "$UI_RESPONSE_FILE" 2>/dev/null)
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to update test result in response file."
+        return 1
+    fi
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 }
 
 update_loading_progress() {
@@ -313,9 +317,12 @@ update_loading_progress() {
         ')
     fi
 
-    [ -z "$json_content" ] && return
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to update loading progress in response file."
+        return 1
+    fi
 
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 
     if [ "$progress" = "100" ]; then
         /jffs/scripts/xrayui service_event cleanloadingprogress >/dev/null 2>&1 &
@@ -335,13 +342,14 @@ remove_loading_progress() {
 
     local json_content=$(cat "$UI_RESPONSE_FILE")
 
-    json_content=$(echo "$json_content" | jq '
-            del(.loading)
-        ')
+    json_content=$(echo "$json_content" | jq 'del(.loading)' 2>/dev/null)
 
-    [ -z "$json_content" ] && return
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to remove loading progress from response file."
+        return 1
+    fi
 
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 }
 
 fixme() {
