@@ -228,8 +228,10 @@ load_ui_response() {
     fi
 
     UI_RESPONSE=$(cat "$UI_RESPONSE_FILE")
-    if [ "$UI_RESPONSE" = "" ]; then
+    if [ -z "$UI_RESPONSE" ] || ! echo "$UI_RESPONSE" | jq empty 2>/dev/null; then
+        log_warn "Response file is empty or contains invalid JSON, resetting to {}"
         UI_RESPONSE="{}"
+        echo '{}' >"$UI_RESPONSE_FILE"
     fi
 }
 
