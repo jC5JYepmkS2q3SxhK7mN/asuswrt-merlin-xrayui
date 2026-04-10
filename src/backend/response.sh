@@ -70,19 +70,23 @@ initial_response() {
     local after_firewall_start=$(sed '1{/^#!/d}' "$ADDON_USER_SCRIPTS_DIR/firewall_after_start" 2>/dev/null || echo "")
     local after_firewall_cleanup=$(sed '1{/^#!/d}' "$ADDON_USER_SCRIPTS_DIR/firewall_after_cleanup" 2>/dev/null || echo "")
 
-    local XRAY_VERSION=$(xray version | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1) || log_error "Error: Failed to get Xray version."
+    local XRAY_VERSION
+    XRAY_VERSION=$(xray version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+    [ -z "$XRAY_VERSION" ] && log_warn "Failed to get Xray version."
 
     # Collect the names of all JSON files from /opt/etc/xray
-    local profiles=$(find /opt/etc/xray -maxdepth 1 -type f -name "*.json" -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')
+    local profiles
+    profiles=$(find /opt/etc/xray -maxdepth 1 -type f -name "*.json" -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]' 2>/dev/null)
     if [ -z "$profiles" ]; then
         profiles="[]"
     fi
 
     # Collect the backups
-    local backups=$(
+    local backups
+    backups=$(
         find "$ADDON_SHARE_DIR/backup" -maxdepth 1 -type f -name "*.tar.gz" \
-            -printf "%T@ %f\n" | sort -nr | awk '{print $2}' |
-            jq -R -s -c 'split("\n")[:-1]'
+            -printf "%T@ %f\n" 2>/dev/null | sort -nr | awk '{print $2}' |
+            jq -R -s -c 'split("\n")[:-1]' 2>/dev/null
     )
     [ -z "$backups" ] && backups="[]"
 
@@ -92,6 +96,7 @@ initial_response() {
 
     # Single jq call reading directly from file — avoids shell variable / pipe overhead
     local _tmp_response="/tmp/xray-response.$$.tmp"
+    local _jq_err="/tmp/xray-jq-err.$$.tmp"
     if ! jq \
         --arg geoip "$geoip_date" \
         --arg geosite "$geosite_date" \
@@ -166,9 +171,9 @@ initial_response() {
         | .xray.debug = $debug
         | if $has_scribe then .integration.scribe = { enabled: $integration_scribe } else . end
         | del(.loading)
-        ' "$UI_RESPONSE_FILE" >"$_tmp_response"; then
-        log_error "Error: Failed to build initial response JSON. Building minimal response."
-        rm -f "$_tmp_response"
+        ' "$UI_RESPONSE_FILE" >"$_tmp_response" 2>"$_jq_err"; then
+        log_error "Error: Failed to build initial response JSON. jq error: $(cat "$_jq_err" 2>/dev/null)"
+        rm -f "$_tmp_response" "$_jq_err"
         if ! jq -n \
             --arg geoipurl "$geoipurl" \
             --arg geositeurl "$geositeurl" \
@@ -201,10 +206,13 @@ initial_response() {
             '{
                 geodata: { geoip_url: $geoipurl, geosite_url: $geositeurl, community: { "geoip.dat": $geoip, "geosite.dat": $geosite }, auto_update: $geo_auto_update },
                 xray: { uptime: $uptime, profile: $profile, skip_test: $skip_test, clients_check: $clients_check, check_connection: $check_connection, probe_url: $probe_url, github_proxy: $github_proxy, dnsmasq: $dnsmasq, logs_dor: $logs_dor, logs_max_size: $logs_max_size, ipsec: $ipsec, startup_delay: $startup_delay, sleep_time: $sleep_time, dns_only: $dns_only, block_quic: $block_quic, subscription_auto_refresh: $sar, subscription_auto_fallback: ($saf == "true"), subscription_fallback_interval: ($sfi | tonumber), subscriptions: { links: [], filters: [] }, hooks: {}, ui_version: $xrayui_ver, core_version: $xray_ver, profiles: $profiles, backups: $backups, debug: $debug }
-            }' >"$_tmp_response"; then
-            log_error "Error: jq -n also failed. Writing bare minimum response."
+            }' >"$_tmp_response" 2>"$_jq_err"; then
+            log_error "Error: jq -n also failed. jq error: $(cat "$_jq_err" 2>/dev/null). Writing bare minimum response."
             echo '{"xray":{"ui_version":"'"$XRAYUI_VERSION"'","core_version":"","profiles":[],"backups":[]}}' >"$_tmp_response"
         fi
+        rm -f "$_jq_err"
+    else
+        rm -f "$_jq_err"
     fi
 
     if mv -f "$_tmp_response" "$UI_RESPONSE_FILE"; then

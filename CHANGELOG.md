@@ -1,5 +1,11 @@
 # XRAYUI Changelog
 
+## [0.66.4] - 2026-04-10
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: UI stopped loading on some `Gnuton` and third-party firmware builds. The router's `httpd` exports `LD_LIBRARY_PATH` pointing to firmware libraries; Entware binaries (`jq`, `xray`, `find`, `grep`) inherited this and loaded an incompatible `libc`, causing segfaults. The script now clears `LD_LIBRARY_PATH` before running any Entware commands.
+
 ## [0.66.3] - 2026-04-07
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
