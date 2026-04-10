@@ -511,6 +511,7 @@
   };
 
   const fetch_subscription_protocols = async () => {
+    engine.resetSubscriptionsCache();
     await engine.executeWithLoadingProgress(async () => {
       await engine.submit(SubmitActions.subscribeFetchProtocols, options.subscriptions?.links?.join('|'));
     }, false);

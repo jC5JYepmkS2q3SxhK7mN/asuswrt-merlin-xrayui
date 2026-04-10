@@ -296,16 +296,23 @@ configure_firewall_server() {
 
     # Iterate over all inbounds
     jq -c '.inbounds[]' "$XRAY_CONFIG_FILE" | while IFS= read -r inbound; do
-        local tag=$(echo "$inbound" | jq -r '.tag // empty')
-        local protocol=$(echo "$inbound" | jq -r '.protocol // empty')
-        local listen_addr=$(echo "$inbound" | jq -r '.listen // "0.0.0.0"')
+        local tag protocol listen_addr port
+        local _inbound_vars
+        if ! _inbound_vars=$(echo "$inbound" | jq -r '
+            "tag=" + ((.tag // "") | tostring | @sh) + "\n" +
+            "protocol=" + ((.protocol // "") | tostring | @sh) + "\n" +
+            "listen_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
+            "port=" + ((.port // "") | tostring | @sh)
+        '); then
+            log_warn "Skipping malformed server inbound: failed to parse JSON"
+            continue
+        fi
+        eval "$_inbound_vars"
 
-        # Skip inbounds with tags starting with 'dokodemo-door' protocol
+        # Skip inbounds with 'dokodemo-door' protocol
         if [ "$protocol" = "dokodemo-door" ]; then
             continue
         fi
-
-        local port=$(echo "$inbound" | jq -r '.port // empty')
         if [ -z "$port" ]; then
             log_warn "No valid port found for inbound with tag $tag. Skipping."
             continue
@@ -571,9 +578,17 @@ configure_firewall_client() {
     # Start Redirecting traffic to the xray
 
     while IFS= read -r inbound; do
-        local dokodemo_port=$(echo "$inbound" | jq -r '.port // empty')
-        local dokodemo_addr=$(echo "$inbound" | jq -r '.listen // "0.0.0.0"')
-        local protocols=$(echo "$inbound" | jq -r '.settings.network // "tcp"')
+        local dokodemo_port dokodemo_addr protocols
+        local _client_vars
+        if ! _client_vars=$(echo "$inbound" | jq -r '
+            "dokodemo_port=" + ((.port // "") | tostring | @sh) + "\n" +
+            "dokodemo_addr=" + ((.listen // "0.0.0.0") | tostring | @sh) + "\n" +
+            "protocols=" + ((.settings.network // "tcp") | tostring | @sh)
+        '); then
+            log_warn "Skipping malformed client inbound: failed to parse JSON"
+            continue
+        fi
+        eval "$_client_vars"
 
         if [ -z "$dokodemo_port" ]; then
             log_warn "$IPT_TYPE inbound missing valid port. Skipping."
@@ -611,11 +626,18 @@ configure_firewall_client() {
         log_info "Apply $IPT_TYPE rules for inbound on port $dokodemo_port with protocols '$protocols'."
 
         while IFS= read -r policy; do
-            policy_name="$(echo "$policy" | jq -r '.name')"
-            policy_mode="$(echo "$policy" | jq -r '.mode // "bypass"')"
-            tcp_ports="$(echo "$policy" | jq -r '.tcp // ""')"
-            udp_ports="$(echo "$policy" | jq -r '.udp // ""')"
-            macs=$(echo "$policy" | jq -r '.mac[]?')
+            local _policy_vars
+            if ! _policy_vars=$(echo "$policy" | jq -r '
+                "policy_name=" + ((.name // "") | tostring | @sh) + "\n" +
+                "policy_mode=" + ((.mode // "bypass") | tostring | @sh) + "\n" +
+                "tcp_ports=" + ((.tcp // "") | tostring | @sh) + "\n" +
+                "udp_ports=" + ((.udp // "") | tostring | @sh) + "\n" +
+                "macs=" + (([.mac[]?] | join("\n")) | @sh)
+            '); then
+                log_warn "Skipping malformed policy: failed to parse JSON"
+                continue
+            fi
+            eval "$_policy_vars"
 
             [ -z "$macs" ] && macs="ANY"
 

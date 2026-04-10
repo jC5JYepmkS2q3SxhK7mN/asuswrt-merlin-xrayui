@@ -167,17 +167,23 @@ subscription_parse_vmess() {
     j=$(echo "$payload" | base64 -d 2>/dev/null) || return 1
 
     local add port id ps aid scy tls net path hdr qhost
-    add=$(echo "$j" | jq -r '.add')
-    port=$(echo "$j" | jq -r '.port')
-    id=$(echo "$j" | jq -r '.id')
-    ps=$(echo "$j" | jq -r '.ps // "vmess"')
-    aid=$(echo "$j" | jq -r '.aid // 0')
-    scy=$(echo "$j" | jq -r '.scy // "auto"')
-    tls=$(echo "$j" | jq -r '.tls // "none"')
-    net=$(echo "$j" | jq -r '.net // "tcp"')
-    path=$(echo "$j" | jq -r '.path // ""')
-    hdr=$(echo "$j" | jq -r '.type // ""')
-    qhost=$(echo "$j" | jq -r '.host // ""')
+    local _vmess_vars
+    if ! _vmess_vars=$(echo "$j" | jq -r '
+        "add=" + ((.add // "") | tostring | @sh) + "\n" +
+        "port=" + ((.port // 0) | tostring | @sh) + "\n" +
+        "id=" + ((.id // "") | tostring | @sh) + "\n" +
+        "ps=" + ((.ps // "vmess") | tostring | @sh) + "\n" +
+        "aid=" + ((.aid // 0) | tostring | @sh) + "\n" +
+        "scy=" + ((.scy // "auto") | tostring | @sh) + "\n" +
+        "tls=" + ((.tls // "none") | tostring | @sh) + "\n" +
+        "net=" + ((.net // "tcp") | tostring | @sh) + "\n" +
+        "path=" + ((.path // "") | tostring | @sh) + "\n" +
+        "hdr=" + ((.type // "") | tostring | @sh) + "\n" +
+        "qhost=" + ((.host // "") | tostring | @sh)
+    '); then
+        return 1
+    fi
+    eval "$_vmess_vars"
 
     local seed=""
     [ "$net" = "kcp" ] && seed="$path"
