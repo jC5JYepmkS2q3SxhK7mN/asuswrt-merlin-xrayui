@@ -16,37 +16,49 @@ apply_general_options() {
 
     local genopts=$(reconstruct_payload)
 
-    log_debug "General options recieved: $genopts"
-    # setting logs
-    local github_proxy=$(echo "$genopts" | jq -r '.github_proxy // ""')
-    local log_level=$(echo "$genopts" | jq -r '.logs_level // "warning"')
-    local logs_access=$(echo "$genopts" | jq -r '.logs_access // "false"')
-    local logs_error=$(echo "$genopts" | jq -r '.logs_error // "false"')
-    local logs_dns=$(echo "$genopts" | jq -r '.logs_dns // "false"')
-    local logs_dnsmasq=$(echo "$genopts" | jq -r '.logs_dnsmasq // "false"')
-    local logs_dor=$(echo "$genopts" | jq -r '.logs_dor // "false"')
-    local logs_max_size=$(echo "$genopts" | jq -r '.logs_max_size // 10')
-    local skip_test=$(echo "$genopts" | jq -r '.skip_test // "false"')
-    local clients_check=$(echo "$genopts" | jq -r '.clients_check // "false"')
-    local debug=$(echo "$genopts" | jq -r '.debug // "false"')
-    local ipsec=$(echo "$genopts" | jq -r '.ipsec // "off"')
-    local check_connection=$(echo "$genopts" | jq -r '.check_connection // "false"')
-    local startup_delay=$(echo "$genopts" | jq -r '.startup_delay // 0')
-    local xray_sleep_time=$(echo "$genopts" | jq -r '.sleep_time // 10')
-
-    local geosite_url=$(echo "$genopts" | jq -r '.geo_site_url // ""')
-    local geoip_url=$(echo "$genopts" | jq -r '.geo_ip_url // ""')
-    local geo_auto_update=$(echo "$genopts" | jq -r '.geo_auto_update // "false"')
-    local hooks=$(echo "$genopts" | jq -c '.hooks // {}')
-    local subscriptionLinks=$(echo "$genopts" | jq -r '(.subscriptions.links // []) | join("|")')
-    local xray_dns_only=$(echo "$genopts" | jq -r '.dns_only // "false"')
-    local xray_block_quic=$(echo "$genopts" | jq -r '.block_quic // "false"')
-    local integration_scribe=$(echo "$genopts" | jq -r '.logs_scribe // "false"')
-    local subscription_auto_refresh=$(echo "$genopts" | jq -r '.subscription_auto_refresh // "disabled"')
-    local subscription_auto_fallback=$(echo "$genopts" | jq -r '.subscription_auto_fallback // "false"')
-    local subscription_fallback_interval=$(echo "$genopts" | jq -r '.subscription_fallback_interval // "5"')
-    local probe_url=$(echo "$genopts" | jq -r '.probe_url // "https://www.google.com/generate_204"')
-    local subscription_filters=$(echo "$genopts" | jq -r '(.subscriptions.filters // []) | join("|")')
+    log_debug "General options received: $genopts"
+    # Extract all general options in a single jq call
+    local github_proxy log_level logs_access logs_error logs_dns logs_dnsmasq logs_dor
+    local logs_max_size skip_test clients_check debug ipsec check_connection
+    local startup_delay xray_sleep_time geosite_url geoip_url geo_auto_update hooks
+    local subscriptionLinks xray_dns_only xray_block_quic integration_scribe
+    local subscription_auto_refresh subscription_auto_fallback
+    local subscription_fallback_interval probe_url subscription_filters
+    local _genopts_vars
+    if ! _genopts_vars=$(echo "$genopts" | jq -r '
+        "github_proxy=" + ((.github_proxy // "") | tostring | @sh) + "\n" +
+        "log_level=" + ((.logs_level // "warning") | tostring | @sh) + "\n" +
+        "logs_access=" + ((.logs_access // "false") | tostring | @sh) + "\n" +
+        "logs_error=" + ((.logs_error // "false") | tostring | @sh) + "\n" +
+        "logs_dns=" + ((.logs_dns // "false") | tostring | @sh) + "\n" +
+        "logs_dnsmasq=" + ((.logs_dnsmasq // "false") | tostring | @sh) + "\n" +
+        "logs_dor=" + ((.logs_dor // "false") | tostring | @sh) + "\n" +
+        "logs_max_size=" + ((.logs_max_size // 10) | tostring | @sh) + "\n" +
+        "skip_test=" + ((.skip_test // "false") | tostring | @sh) + "\n" +
+        "clients_check=" + ((.clients_check // "false") | tostring | @sh) + "\n" +
+        "debug=" + ((.debug // "false") | tostring | @sh) + "\n" +
+        "ipsec=" + ((.ipsec // "off") | tostring | @sh) + "\n" +
+        "check_connection=" + ((.check_connection // "false") | tostring | @sh) + "\n" +
+        "startup_delay=" + ((.startup_delay // 0) | tostring | @sh) + "\n" +
+        "xray_sleep_time=" + ((.sleep_time // 10) | tostring | @sh) + "\n" +
+        "geosite_url=" + ((.geo_site_url // "") | tostring | @sh) + "\n" +
+        "geoip_url=" + ((.geo_ip_url // "") | tostring | @sh) + "\n" +
+        "geo_auto_update=" + ((.geo_auto_update // "false") | tostring | @sh) + "\n" +
+        "hooks=" + ((.hooks // {}) | tojson | @sh) + "\n" +
+        "subscriptionLinks=" + (((.subscriptions.links // []) | join("|")) | @sh) + "\n" +
+        "xray_dns_only=" + ((.dns_only // "false") | tostring | @sh) + "\n" +
+        "xray_block_quic=" + ((.block_quic // "false") | tostring | @sh) + "\n" +
+        "integration_scribe=" + ((.logs_scribe // "false") | tostring | @sh) + "\n" +
+        "subscription_auto_refresh=" + ((.subscription_auto_refresh // "disabled") | tostring | @sh) + "\n" +
+        "subscription_auto_fallback=" + ((.subscription_auto_fallback // "false") | tostring | @sh) + "\n" +
+        "subscription_fallback_interval=" + ((.subscription_fallback_interval // "5") | tostring | @sh) + "\n" +
+        "probe_url=" + ((.probe_url // "https://www.google.com/generate_204") | tostring | @sh) + "\n" +
+        "subscription_filters=" + (((.subscriptions.filters // []) | join("|")) | @sh)
+    '); then
+        log_error "Failed to parse general options payload."
+        return 1
+    fi
+    eval "$_genopts_vars"
 
     if [ ! -d "$ADDON_LOGS_DIR" ]; then
         mkdir -p "$ADDON_LOGS_DIR"
@@ -55,24 +67,26 @@ apply_general_options() {
     local logs_access_path="$ADDON_LOGS_DIR/xray_access.log"
     local logs_error_path="$ADDON_LOGS_DIR/xray_error.log"
 
-    json_content=$(echo "$json_content" | jq --arg loglevel "$log_level" '.log.loglevel = $loglevel')
+    local access_val="none"
+    [ "$logs_access" = "true" ] && access_val="$logs_access_path"
+    local error_val="none"
+    [ "$logs_error" = "true" ] && error_val="$logs_error_path"
 
-    if [ "$logs_access" = "true" ]; then
-        json_content=$(echo "$json_content" | jq --arg logs_access_path "$logs_access_path" '.log.access = $logs_access_path')
-    else
-        json_content=$(echo "$json_content" | jq '.log.access = "none"')
-    fi
+    json_content=$(echo "$json_content" | jq \
+        --arg loglevel "$log_level" \
+        --arg access "$access_val" \
+        --arg error "$error_val" \
+        --argjson dns_log "$([ "$logs_dns" = "true" ] && echo true || echo false)" \
+        '
+        .log.loglevel = $loglevel
+        | .log.access = $access
+        | .log.error = $error
+        | if $dns_log then .log.dnsLog = true else del(.log.dnsLog) end
+        ')
 
-    if [ "$logs_error" = "true" ]; then
-        json_content=$(echo "$json_content" | jq --arg logs_error_path "$logs_error_path" '.log.error = $logs_error_path')
-    else
-        json_content=$(echo "$json_content" | jq '.log.error = "none"')
-    fi
-
-    if [ "$logs_dns" = "true" ]; then
-        json_content=$(echo "$json_content" | jq '.log.dnsLog = true')
-    else
-        json_content=$(echo "$json_content" | jq 'del(.log.dnsLog)')
+    if [ -z "$json_content" ]; then
+        log_error "Failed to build xray config JSON. Aborting."
+        return 1
     fi
 
     echo "$json_content" >"$temp_config"
@@ -144,9 +158,16 @@ apply_general_options_hooks() {
     [ "$hooks_json" = "null" ] && hooks_json="{}"
 
     local before after cleanup
-    before=$(printf '%s' "$hooks_json" | jq -r '.before_firewall_start // empty')
-    after=$(printf '%s' "$hooks_json" | jq -r '.after_firewall_start // empty')
-    cleanup=$(printf '%s' "$hooks_json" | jq -r '.after_firewall_cleanup // empty')
+    local _hooks_vars
+    if ! _hooks_vars=$(printf '%s' "$hooks_json" | jq -r '
+        "before=" + ((.before_firewall_start // "") | tostring | @sh) + "\n" +
+        "after=" + ((.after_firewall_start // "") | tostring | @sh) + "\n" +
+        "cleanup=" + ((.after_firewall_cleanup // "") | tostring | @sh)
+    '); then
+        log_error "Failed to parse hooks payload."
+        return 1
+    fi
+    eval "$_hooks_vars"
 
     local script_before="$ADDON_USER_SCRIPTS_DIR/firewall_before_start"
     local script_after="$ADDON_USER_SCRIPTS_DIR/firewall_after_start"

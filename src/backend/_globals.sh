@@ -3,6 +3,7 @@
 
 export PATH="/opt/bin:/opt/sbin:/sbin:/bin:/usr/sbin:/usr/bin"
 export LC_ALL=C
+unset LD_LIBRARY_PATH
 
 source /usr/sbin/helper.sh
 

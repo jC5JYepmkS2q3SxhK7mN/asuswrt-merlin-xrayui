@@ -228,14 +228,21 @@ load_ui_response() {
     fi
 
     UI_RESPONSE=$(cat "$UI_RESPONSE_FILE")
-    if [ "$UI_RESPONSE" = "" ]; then
+    if [ -z "$UI_RESPONSE" ] || ! echo "$UI_RESPONSE" | jq empty 2>/dev/null; then
+        log_warn "Response file is empty or contains invalid JSON, resetting to {}"
         UI_RESPONSE="{}"
+        echo '{}' >"$UI_RESPONSE_FILE"
     fi
 }
 
 save_ui_response() {
 
     log_debug "Saving UI response to $UI_RESPONSE_FILE"
+
+    if [ -z "$UI_RESPONSE" ]; then
+        log_error "UI_RESPONSE is empty, refusing to overwrite $UI_RESPONSE_FILE"
+        return 1
+    fi
 
     if ! echo "$UI_RESPONSE" >"$UI_RESPONSE_FILE"; then
         log_error "Failed to save UI response to $UI_RESPONSE_FILE"
@@ -273,8 +280,13 @@ test_xray_config() {
 
     load_ui_response
 
-    local json_content=$(jq --arg msg "$message" '.xray.test = $msg' "$UI_RESPONSE_FILE")
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    local json_content
+    json_content=$(jq --arg msg "$message" '.xray.test = $msg' "$UI_RESPONSE_FILE" 2>/dev/null)
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to update test result in response file."
+        return 1
+    fi
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 }
 
 update_loading_progress() {
@@ -305,7 +317,12 @@ update_loading_progress() {
         ')
     fi
 
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to update loading progress in response file."
+        return 1
+    fi
+
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 
     if [ "$progress" = "100" ]; then
         /jffs/scripts/xrayui service_event cleanloadingprogress >/dev/null 2>&1 &
@@ -325,11 +342,14 @@ remove_loading_progress() {
 
     local json_content=$(cat "$UI_RESPONSE_FILE")
 
-    json_content=$(echo "$json_content" | jq '
-            del(.loading)
-        ')
+    json_content=$(echo "$json_content" | jq 'del(.loading)' 2>/dev/null)
 
-    echo "$json_content" >"/tmp/xray-response.tmp" && mv -f "/tmp/xray-response.tmp" "$UI_RESPONSE_FILE"
+    if [ -z "$json_content" ]; then
+        log_warn "Failed to remove loading progress from response file."
+        return 1
+    fi
+
+    echo "$json_content" >"/tmp/xray-response.$$.tmp" && mv -f "/tmp/xray-response.$$.tmp" "$UI_RESPONSE_FILE"
 }
 
 fixme() {

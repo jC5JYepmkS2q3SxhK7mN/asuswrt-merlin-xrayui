@@ -1,5 +1,25 @@
 # XRAYUI Changelog
 
+## [0.66.4] - 2026-04-10
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: UI stopped loading on some `Gnuton` and third-party firmware builds. The router's `httpd` exports `LD_LIBRARY_PATH` pointing to firmware libraries; Entware binaries (`jq`, `xray`, `find`, `grep` etc.) inherited this and loaded an incompatible `libc`, causing segfaults. ([#335](https://github.com/DanielLavrushin/asuswrt-merlin-xrayui/issues/335))
+
+## [0.66.3] - 2026-04-07
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: DNS ipset `redirect` / `bypass` mode stopped working after restarting `dnsmasq` or Xray on routers that also run Diversion (or other addons that modify `dnsmasq`). Domains were no longer added to the ipset, so traffic was not routed through the proxy.
+- FIXED: Domains starting with a digit (e.g. `2ip.io`, `3com.com`) were incorrectly treated as IP addresses and ignored by the ipset feature.
+- FIXED: `Country.mmdb` download did not use the configured GitHub proxy, causing download failures or slow downloads in some regions.
+
+## [0.66.2] - 2026-04-05
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: Auto-fallback and subscription refresh could switch to the wrong server (e.g. selecting a German server instead of Estonian, or JP instead of UK). The selected server is now correctly preserved across restarts and automatic updates.
+
 ## [0.66.1] - 2026-04-02
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._

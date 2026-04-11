@@ -57,8 +57,15 @@ configure_tun_inbounds() {
         [ -z "$inbound" ] && continue
 
         local tun_name tun_addresses tun_routes tag
-        tag=$(echo "$inbound" | jq -r '.tag // "tun-inbound"')
-        tun_name=$(echo "$inbound" | jq -r '.settings.name // "xray0"')
+        local _tun_vars
+        if ! _tun_vars=$(echo "$inbound" | jq -r '
+            "tag=" + ((.tag // "tun-inbound") | tostring | @sh) + "\n" +
+            "tun_name=" + ((.settings.name // "xray0") | tostring | @sh)
+        '); then
+            log_warn "Skipping malformed TUN inbound: failed to parse JSON"
+            continue
+        fi
+        eval "$_tun_vars"
         tun_addresses=$(echo "$inbound" | jq -r '.settings.address // [] | .[]')
         tun_routes=$(echo "$inbound" | jq -r '.settings.routes // [] | .[]')
 

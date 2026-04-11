@@ -15,12 +15,17 @@ update_xrayui_config() {
     local key="$1"
     local value="$2"
     [ -f "$XRAYUI_CONFIG_FILE" ] || touch "$XRAYUI_CONFIG_FILE"
-    local safe_value
-    safe_value=$(printf '%s' "$value" | sed 's/[\\\"$`]/\\&/g')
+    # Escape for shell sourcing (the config file is sourced with .)
+    local sh_safe
+    sh_safe=$(printf '%s' "$value" | sed 's/[\\\"$`]/\\&/g')
     if grep -qE "^${key}=" "$XRAYUI_CONFIG_FILE"; then
-        grep -v "^${key}=" "$XRAYUI_CONFIG_FILE" >"/tmp/xrayui_config.$$" && mv "/tmp/xrayui_config.$$" "$XRAYUI_CONFIG_FILE"
+        # Additionally escape for sed replacement string
+        local sed_safe
+        sed_safe=$(printf '%s' "$sh_safe" | sed 's/[|&\\]/\\&/g')
+        sed "s|^${key}=.*|${key}=\"${sed_safe}\"|" "$XRAYUI_CONFIG_FILE" >"/tmp/xrayui_config.$$" && mv "/tmp/xrayui_config.$$" "$XRAYUI_CONFIG_FILE"
+    else
+        printf '%s="%s"\n' "$key" "$sh_safe" >>"$XRAYUI_CONFIG_FILE"
     fi
-    printf '%s="%s"\n' "$key" "$safe_value" >>"$XRAYUI_CONFIG_FILE"
 }
 
 generate_xray_config() {
