@@ -1,0 +1,41 @@
+name: 🔄 自动同步原仓库 (Upstream Sync)
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # 北京时间每天上午 10 点自动运行
+  workflow_dispatch: # 保留手动触发按钮
+
+jobs:
+  sync_latest_from_upstream:
+    name: Sync latest commits from upstream repo
+    runs-on: ubuntu-latest
+    # 强制启用 Node.js 24，解决 GitHub 官方关于 Node 20 过期的警告
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+      # 1. 检出你的仓库代码
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+
+      # 2. 运行同步动作
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          # 👉 这里已经修改为原作者的正确仓库地址
+          upstream_sync_repo: DanielLavrushin/asuswrt-merlin-xrayui
+          upstream_sync_branch: main
+          test_mode: false
+
+      # 3. 结果反馈
+      - name: Sync check
+        if: failure()
+        run: echo "同步失败，可能有代码冲突，请检查！"
+      
+      - name: New commits found
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "发现原作者更新，已自动同步！"
