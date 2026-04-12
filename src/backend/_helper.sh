@@ -423,15 +423,6 @@ cleanup_stale_asdfiles() {
         rm -f "$asdbk"/xrayui_*_bk "$asdbk"/*xrayui*.tmp.*_bk 2>/dev/null
     fi
 
-    # Also drop any orphaned in-place staging files under our share dir.
-    if [ -d "$ADDON_SHARE_DIR/dnsmasq" ]; then
-        rm -f "$ADDON_SHARE_DIR/dnsmasq/.direct.conf.new" \
-            "$ADDON_SHARE_DIR/dnsmasq/.direct.conf.new.uniq" \
-            "$ADDON_SHARE_DIR/dnsmasq/.geoip4.new" \
-            "$ADDON_SHARE_DIR/dnsmasq/.geoip6.new" \
-            "$ADDON_SHARE_DIR/dnsmasq/.ipset.rules.new" 2>/dev/null
-        rmdir "$ADDON_SHARE_DIR/dnsmasq/.lock" 2>/dev/null
-    fi
 }
 
 urldecode_pct() {
