@@ -185,7 +185,7 @@ get_webui_page() {
 
 am_settings_del() {
     local key="$1"
-    sed "/$key/d" /jffs/addons/custom_settings.txt > /tmp/custom_settings.$$ && mv /tmp/custom_settings.$$ /jffs/addons/custom_settings.txt
+    sed "/$key/d" /jffs/addons/custom_settings.txt >/tmp/custom_settings.$$ && mv /tmp/custom_settings.$$ /jffs/addons/custom_settings.txt
 }
 
 remove_json_comments() {
@@ -216,7 +216,7 @@ reconstruct_payload() {
 
 cleanup_payload() {
     # clean up all payload chunks from the custom settings
-    sed '/^xray_payload/d' /jffs/addons/custom_settings.txt > /tmp/custom_settings.$$ && mv /tmp/custom_settings.$$ /jffs/addons/custom_settings.txt
+    sed '/^xray_payload/d' /jffs/addons/custom_settings.txt >/tmp/custom_settings.$$ && mv /tmp/custom_settings.$$ /jffs/addons/custom_settings.txt
 }
 
 load_ui_response() {
@@ -375,14 +375,7 @@ fixme() {
     log_info "Removing file $UI_RESPONSE_FILE..."
     rm -f "$UI_RESPONSE_FILE" || log_warn "Failed to remove $UI_RESPONSE_FILE"
 
-    log_info "Cleaning up xrayui backup files from /jffs/.asdbk..."
-    if [ -d /jffs/.asdbk ]; then
-        rm -f /jffs/.asdbk/xrayui_*_bk /jffs/.asdbk/*xrayui*.tmp.*_bk 2>/dev/null && \
-            log_ok "Removed xrayui backup files from /jffs/.asdbk" || \
-            log_debug "No xrayui backup files found in /jffs/.asdbk"
-    else
-        log_debug "/jffs/.asdbk directory does not exist"
-    fi
+    cleanup_stale_asdfiles
 
     log_ok "Done with fixme function."
 }
@@ -414,6 +407,31 @@ get_or_create_hwid() {
     fi
     printf '%s' "$hwid" >"$hwid_file"
     printf '%s' "$hwid"
+}
+
+cleanup_stale_asdfiles() {
+    # Purge orphaned xrayui staging files and any ASD (Asus Self Defense) backups
+    local asdbk="/jffs/.asdbk"
+
+    rm -f /tmp/xrayui_*.tmp.* 2>/dev/null
+    rm -f /tmp/xrayui_dnsmasq_direct.tmp.* 2>/dev/null
+    rm -f /tmp/xrayui_geoip4.* /tmp/xrayui_geoip6.* 2>/dev/null
+    rm -f /tmp/xrayui_config.* /tmp/xrayui-dnsmasq-servers.* 2>/dev/null
+    rm -f /tmp/xrayui_script.* /tmp/xrayui_payload* 2>/dev/null
+
+    if [ -d "$asdbk" ]; then
+        rm -f "$asdbk"/xrayui_*_bk "$asdbk"/*xrayui*.tmp.*_bk 2>/dev/null
+    fi
+
+    # Also drop any orphaned in-place staging files under our share dir.
+    if [ -d "$ADDON_SHARE_DIR/dnsmasq" ]; then
+        rm -f "$ADDON_SHARE_DIR/dnsmasq/.direct.conf.new" \
+            "$ADDON_SHARE_DIR/dnsmasq/.direct.conf.new.uniq" \
+            "$ADDON_SHARE_DIR/dnsmasq/.geoip4.new" \
+            "$ADDON_SHARE_DIR/dnsmasq/.geoip6.new" \
+            "$ADDON_SHARE_DIR/dnsmasq/.ipset.rules.new" 2>/dev/null
+        rmdir "$ADDON_SHARE_DIR/dnsmasq/.lock" 2>/dev/null
+    fi
 }
 
 urldecode_pct() {

@@ -5,6 +5,8 @@ start() {
 
     load_xrayui_config
 
+    cleanup_stale_asdfiles
+
     # Prevent duplicate starts - check if Xray is already running
     local existing_pid=$(get_proc "xray")
     if [ -n "$existing_pid" ]; then
@@ -99,6 +101,8 @@ stop() {
     fi
 
     cleanup_firewall
+
+    cleanup_stale_asdfiles
 }
 
 restart() {

@@ -23,6 +23,8 @@ startup() {
 
     load_xrayui_config
 
+    cleanup_stale_asdfiles
+
     local skipwait=${skipwait:-false}
     local startup_delay=${startup_delay:-0}
     remount_ui

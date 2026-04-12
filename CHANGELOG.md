@@ -1,5 +1,11 @@
 # XRAYUI Changelog
 
+## [0.66.5] - 2026-04-12
+
+> _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._
+
+- FIXED: XRAYUI could slowly fill up your router's `/jffs` storage with leftover backup files in `/jffs/.asdbk/`, which over time could cause the router to run out of space. XRAYUI now automatically cleans up these files on every start, stop, restart and boot, and no longer leaves temporary files behind that the router's built-in security scanner would copy there.
+
 ## [0.66.4] - 2026-04-10
 
 > _Important: Please clear your browser cache (e.g. **Ctrl+F5**) to ensure outdated files are updated._

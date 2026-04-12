@@ -187,14 +187,7 @@ EOF
 
     update_community_geodata
 
-    log_info "Cleaning up xrayui backup files..."
-    if [ -d /jffs/.asdbk ]; then
-        rm -f /jffs/.asdbk/xrayui_*_bk /jffs/.asdbk/*xrayui*.tmp.*_bk 2>/dev/null &&
-            log_ok "Removed xrayui backup files from /jffs/.asdbk" ||
-            log_debug "No xrayui backup files found in /jffs/.asdbk"
-    else
-        log_debug "/jffs/.asdbk directory does not exist"
-    fi
+    cleanup_stale_asdfiles
 
     # ---------------------------------------------------------
     # performing version updates
