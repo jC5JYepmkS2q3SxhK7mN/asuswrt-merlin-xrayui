@@ -80,6 +80,64 @@
 - **BYPASS** — домены, направленные в outbound `FREEDOM`, уходят напрямую в интернет; остальное идёт через прокси.
 - **REDIRECT** — наоборот: проксируется только то, что **не** сопоставлено с `FREEDOM`; остальной трафик уходит напрямую.
 
+```mermaid
+flowchart TD
+    Start["⚙️ Применение конфигурации<br/>Xray"] --> Mode{"Режим<br/>DNS-обхода"}
+
+    Mode -->|"OFF"| NoIpset["ipset не создаётся<br/>весь перехваченный трафик<br/>идёт в Xray"]
+    Mode -->|"BYPASS"| ExtractFree["Извлечь домены<br/>из правил → FREEDOM"]
+    Mode -->|"REDIRECT"| ExtractProxy["Извлечь домены<br/>из правил → не FREEDOM<br/>(proxy, blackhole, ...)"]
+
+    ExtractFree --> SkipRegex1{"regexp: ?"}
+    ExtractProxy --> SkipRegex2{"regexp: ?"}
+
+    SkipRegex1 -->|"Да"| Ignored1["⚠️ Пропущено<br/>(ipset не поддерживает regex)"]
+    SkipRegex1 -->|"Нет"| Resolve1["Резолвинг<br/>через системный DNS"]
+
+    SkipRegex2 -->|"Да"| Ignored2["⚠️ Пропущено"]
+    SkipRegex2 -->|"Нет"| Resolve2["Резолвинг<br/>через системный DNS"]
+
+    Resolve1 --> Ipset1["📋 ipset<br/>XRAYUI_BYPASS4"]
+    Resolve2 --> Ipset2["📋 ipset<br/>XRAYUI_PROXY4"]
+
+    Ipset1 --> Runtime{"🌐 Входящий пакет<br/>(после политики B/R)"}
+    Ipset2 --> Runtime
+    NoIpset --> Doko["🚪 dokodemo-door Xray"]
+
+    Runtime -->|"dst IP ∈ XRAYUI_BYPASS4<br/>(оба режима)"| Direct["↪️ Напрямую в WAN<br/>(минуя Xray)"]
+    Runtime -->|"REDIRECT:<br/>dst IP ∉ XRAYUI_PROXY4"| Direct
+    Runtime -->|"Иначе"| Doko
+
+    Doko --> XRules["Правила маршрутизации Xray<br/>(proxy / freedom / blackhole)"]
+    Direct --> Internet["🌍 Интернет"]
+    XRules --> Internet
+
+    style Start fill:#4a9eff,color:#fff,stroke:none
+    style Mode fill:#ff9800,color:#fff,stroke:none
+    style SkipRegex1 fill:#ffb74d,color:#000,stroke:none
+    style SkipRegex2 fill:#ffb74d,color:#000,stroke:none
+    style Runtime fill:#ff9800,color:#fff,stroke:none
+    style ExtractFree fill:#9c27b0,color:#fff,stroke:none
+    style ExtractProxy fill:#9c27b0,color:#fff,stroke:none
+    style Resolve1 fill:#9c27b0,color:#fff,stroke:none
+    style Resolve2 fill:#9c27b0,color:#fff,stroke:none
+    style Ipset1 fill:#607d8b,color:#fff,stroke:none
+    style Ipset2 fill:#607d8b,color:#fff,stroke:none
+    style NoIpset fill:#607d8b,color:#fff,stroke:none
+    style Doko fill:#9c27b0,color:#fff,stroke:none
+    style XRules fill:#4a9eff,color:#fff,stroke:none
+    style Direct fill:#4caf50,color:#fff,stroke:none
+    style Internet fill:#4caf50,color:#fff,stroke:none
+    style RuntimeAll fill:#4a9eff,color:#fff,stroke:none
+    style Ignored1 fill:#f44336,color:#fff,stroke:none
+    style Ignored2 fill:#f44336,color:#fff,stroke:none
+```
+
+Верхняя часть схемы — **build-time**: при применении конфигурации XRAYUI извлекает домены и разово резолвит их в IP, заполняя ipset. Нижняя часть — **runtime**: iptables матчит IP назначения пакета по ipset и решает, идёт пакет в Xray или напрямую в WAN.
+
+> [!note]
+> Правило `dst ∈ XRAYUI_BYPASS4 → RETURN` активно в обоих режимах (`BYPASS` и `REDIRECT`). В режиме `REDIRECT` дополнительно включается правило `dst ∉ XRAYUI_PROXY4 → RETURN`, так что через Xray идёт только трафик, чей IP попал в набор «проксируемых» доменов.
+
 ::: note
 Домены по регулярным выражениям (записи с префиксом `regexp:`) нельзя добавить в ipset, поэтому эта функция их игнорирует. Внутри движка Xray такие правила продолжают работать.
 :::
