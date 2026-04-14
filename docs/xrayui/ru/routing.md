@@ -6,6 +6,42 @@
 
 Не весь трафик автоматически проходит через Xray. Существует три уровня обработки, и каждый последующий работает только с тем, что прошло через предыдущий.
 
+```mermaid
+flowchart TD
+    Dev["📱 Устройство в LAN<br/>(iPhone, PC, TV...)"] -->|"Пакет"| Router["🛜 Роутер ASUS<br/>Merlin + XRAYUI"]
+    Router --> BR{"Уровень 1<br/>Политика B/R<br/>(iptables)"}
+
+    BR -->|"Не перехвачен<br/>(устройство/порт вне политики)"| WANDirect["🌐 WAN напрямую<br/>(Xray не видит трафик)"]
+    BR -->|"Перехвачен"| DNS{"Уровень 2<br/>DNS обход<br/>(ipset)"}
+
+    DNS -->|"BYPASS: домен<br/>во freedom-правиле"| WANDirect
+    DNS -->|"REDIRECT: домен<br/>вне proxy-правил"| WANDirect
+    DNS -->|"Требует обработки"| Doko["🚪 dokodemo-door<br/>(входящий порт Xray)"]
+
+    Doko --> XRoute{"Уровень 3<br/>Правила маршрутизации<br/>Xray"}
+
+    XRoute -->|"proxy"| VPS["🔐 VPS / Outbound<br/>(VLESS, VMess, Trojan...)"]
+    XRoute -->|"freedom"| WANDirect
+    XRoute -->|"blackhole"| Drop["⛔ Заблокировано"]
+
+    VPS -->|"Зашифрованный туннель"| Internet["🌍 Интернет"]
+    WANDirect --> Internet
+
+    style Dev fill:#4a9eff,color:#fff,stroke:none
+    style Router fill:#4a9eff,color:#fff,stroke:none
+    style BR fill:#ff9800,color:#fff,stroke:none
+    style DNS fill:#ff9800,color:#fff,stroke:none
+    style XRoute fill:#ff9800,color:#fff,stroke:none
+    style Doko fill:#9c27b0,color:#fff,stroke:none
+    style VPS fill:#4caf50,color:#fff,stroke:none
+    style WANDirect fill:#4caf50,color:#fff,stroke:none
+    style Internet fill:#4caf50,color:#fff,stroke:none
+    style Drop fill:#f44336,color:#fff,stroke:none
+```
+
+> [!note]
+> Перед всеми тремя уровнями XRAYUI безусловно исключает служебный трафик: DHCP (67/68), NTP (123), IPsec/WireGuard (500/4500/4501/51820), multicast/broadcast, пакеты от самого роутера и трафик, уже попавший в DNAT-состояние (проброс портов). Такие пакеты никогда не попадают в Xray, даже если политики говорят обратное.
+
 ### Уровень 1: Перехват (Политики B/R)
 
 [Политики обхода/перенаправления](br-policy.md) определяют, какие устройства и порты перехватываются. Трафик, не попавший под перехват, идёт напрямую — Xray его не видит.

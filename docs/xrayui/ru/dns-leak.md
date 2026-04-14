@@ -25,6 +25,52 @@
 
 **Решение**: добавьте отдельный DNS-входящий интерфейс (inbound), который явно дозванивается до резолвера и отправляет запросы через ваш исходящий туннель.
 
+## Как возникает утечка и как её закрыть
+
+На схеме ниже — путь DNS-запроса до и после настройки выделенного DNS-inbound.
+
+```mermaid
+flowchart TD
+    App["📱 Приложение<br/>(браузер, игра...)"] -->|"DNS-запрос<br/>example.com"| Dnsmasq["🛜 dnsmasq<br/>на роутере"]
+
+    Dnsmasq --> Decide{"Куда отправить<br/>upstream?"}
+
+    Decide -->|"❌ Без настройки:<br/>DNS провайдера"| ISP["🏢 DNS ISP<br/>(виден провайдеру)"]
+    ISP --> Leak["💧 УТЕЧКА<br/>ISP знает домены"]
+
+    Decide -->|"❌ Публичный DNS<br/>напрямую (8.8.8.8)"| QuicLeak["🌐 Пакет идёт<br/>через WAN"]
+    QuicLeak --> Leak2["💧 Провайдер видит,<br/>что вы спрашиваете<br/>публичный DNS"]
+
+    Decide -->|"✅ С выделенным<br/>DNS-inbound"| DnsInbound["🚪 Xray dokodemo-door<br/>:55100<br/>Follow redirect = OFF"]
+
+    DnsInbound --> TProxy["🔀 Transport: tproxy"]
+    TProxy --> Route["📋 Правило маршрутизации<br/>inbound: dns<br/>outbound: proxy"]
+    Route --> Proxy["🔐 Proxy outbound<br/>(VLESS/VMess/Trojan)"]
+    Proxy -->|"Зашифрованный<br/>туннель"| VPS["☁️ VPS"]
+    VPS --> Resolver["🌍 Публичный резолвер<br/>(8.8.8.8, 1.1.1.1...)"]
+    Resolver -->|"Ответ"| VPS
+    VPS -->|"Через туннель"| App
+
+    QuicBlock["🚫 Блокировка QUIC<br/>(UDP 443 → DROP)"] -.->|"Заставляет браузер<br/>использовать TCP HTTPS"| App
+
+    style App fill:#4a9eff,color:#fff,stroke:none
+    style Dnsmasq fill:#4a9eff,color:#fff,stroke:none
+    style Decide fill:#ff9800,color:#fff,stroke:none
+    style ISP fill:#f44336,color:#fff,stroke:none
+    style Leak fill:#f44336,color:#fff,stroke:none
+    style QuicLeak fill:#f44336,color:#fff,stroke:none
+    style Leak2 fill:#f44336,color:#fff,stroke:none
+    style DnsInbound fill:#9c27b0,color:#fff,stroke:none
+    style TProxy fill:#9c27b0,color:#fff,stroke:none
+    style Route fill:#9c27b0,color:#fff,stroke:none
+    style Proxy fill:#4caf50,color:#fff,stroke:none
+    style VPS fill:#4caf50,color:#fff,stroke:none
+    style Resolver fill:#4caf50,color:#fff,stroke:none
+    style QuicBlock fill:#607d8b,color:#fff,stroke:none
+```
+
+Красные ветки — сценарии утечки: запросы уходят по линку провайдера напрямую. Зелёная ветка — корректный путь: DNS-inbound перехватывает запросы, маршрутизирующее правило направляет их в proxy outbound, и они выходят в публичный резолвер уже со стороны VPS. Блокировка QUIC не относится непосредственно к DNS, но закрывает параллельный канал, через который браузер может отправить IP-адрес в обход прокси.
+
 ## Настройка в XRAYUI
 
 > [!important]

@@ -13,6 +13,14 @@ This is invaluable for:
 - Verifying custom geosite compilations
 - Finding the right category for your needs
 
+## GeodatExplorer — a GUI viewer
+
+If the command line isn't your thing, take a look at [**GeodatExplorer**](https://github.com/DanielLavrushin/GeodatExplorer) — a desktop app (by the same author as XRAYUI) for browsing `geosite.dat` and `geoip.dat` in a graphical UI: search categories, filter entries, switch between geosite and geoip.
+
+Handy when you want to glance at what's inside a category without remembering `v2dat` flags. Copy the `.dat` files off the router (`/opt/sbin/geosite.dat`, `/opt/sbin/geoip.dat`, or your custom `/opt/sbin/xrayui`) and open them in the app.
+
+![20260414105105](../.vuepress/public/images/v2dat/20260414105105.png)
+
 ## Installation Location
 
 When **XRAYUI** is installed, v2dat is located at:

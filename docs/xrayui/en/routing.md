@@ -6,6 +6,42 @@ Routing rules determine which outbound handles specific traffic: proxy, direct (
 
 Not all traffic automatically goes through Xray. There are three processing layers, and each one only works with what passed through the previous one.
 
+```mermaid
+flowchart TD
+    Dev["📱 LAN device<br/>(iPhone, PC, TV...)"] -->|"Packet"| Router["🛜 ASUS Router<br/>Merlin + XRAYUI"]
+    Router --> BR{"Layer 1<br/>B/R Policy<br/>(iptables)"}
+
+    BR -->|"Not intercepted<br/>(device/port outside policy)"| WANDirect["🌐 Direct to WAN<br/>(Xray never sees it)"]
+    BR -->|"Intercepted"| DNS{"Layer 2<br/>DNS bypass<br/>(ipset)"}
+
+    DNS -->|"BYPASS: domain in<br/>freedom rule"| WANDirect
+    DNS -->|"REDIRECT: domain not<br/>in proxy rules"| WANDirect
+    DNS -->|"Needs processing"| Doko["🚪 dokodemo-door<br/>(Xray inbound port)"]
+
+    Doko --> XRoute{"Layer 3<br/>Xray routing rules"}
+
+    XRoute -->|"proxy"| VPS["🔐 VPS / Outbound<br/>(VLESS, VMess, Trojan...)"]
+    XRoute -->|"freedom"| WANDirect
+    XRoute -->|"blackhole"| Drop["⛔ Blocked"]
+
+    VPS -->|"Encrypted tunnel"| Internet["🌍 Internet"]
+    WANDirect --> Internet
+
+    style Dev fill:#4a9eff,color:#fff,stroke:none
+    style Router fill:#4a9eff,color:#fff,stroke:none
+    style BR fill:#ff9800,color:#fff,stroke:none
+    style DNS fill:#ff9800,color:#fff,stroke:none
+    style XRoute fill:#ff9800,color:#fff,stroke:none
+    style Doko fill:#9c27b0,color:#fff,stroke:none
+    style VPS fill:#4caf50,color:#fff,stroke:none
+    style WANDirect fill:#4caf50,color:#fff,stroke:none
+    style Internet fill:#4caf50,color:#fff,stroke:none
+    style Drop fill:#f44336,color:#fff,stroke:none
+```
+
+> [!note]
+> Before any of the three layers, XRAYUI unconditionally excludes service traffic: DHCP (67/68), NTP (123), IPsec/WireGuard (500/4500/4501/51820), multicast/broadcast, packets originated by the router itself, and traffic already in a DNAT state (inbound port-forwards). These packets never reach Xray, even if a policy would otherwise intercept them.
+
 ### Layer 1: Interception (B/R Policies)
 
 [Bypass/Redirect policies](br-policy.md) determine which devices and ports are intercepted. Traffic that isn't intercepted goes direct — Xray never sees it.

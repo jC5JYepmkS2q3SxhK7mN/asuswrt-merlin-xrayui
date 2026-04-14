@@ -80,6 +80,64 @@ Controls how domain decisions are mirrored into kernel ipsets for fast-path rout
 - **BYPASS** — domains mapped to the `FREEDOM` outbound go directly to the internet; everything else remains proxied.
 - **REDIRECT** — the inverse: only domains **not** mapped to `FREEDOM` are proxied; all other traffic goes direct.
 
+```mermaid
+flowchart TD
+    Start["⚙️ Applying Xray<br/>configuration"] --> Mode{"DNS bypass<br/>mode"}
+
+    Mode -->|"OFF"| NoIpset["ipset not created<br/>all intercepted traffic<br/>goes into Xray"]
+    Mode -->|"BYPASS"| ExtractFree["Extract domains<br/>from rules → FREEDOM"]
+    Mode -->|"REDIRECT"| ExtractProxy["Extract domains<br/>from rules → non-FREEDOM<br/>(proxy, blackhole, ...)"]
+
+    ExtractFree --> SkipRegex1{"regexp: ?"}
+    ExtractProxy --> SkipRegex2{"regexp: ?"}
+
+    SkipRegex1 -->|"Yes"| Ignored1["⚠️ Skipped<br/>(ipset has no regex)"]
+    SkipRegex1 -->|"No"| Resolve1["Resolve via<br/>system DNS"]
+
+    SkipRegex2 -->|"Yes"| Ignored2["⚠️ Skipped"]
+    SkipRegex2 -->|"No"| Resolve2["Resolve via<br/>system DNS"]
+
+    Resolve1 --> Ipset1["📋 ipset<br/>XRAYUI_BYPASS4"]
+    Resolve2 --> Ipset2["📋 ipset<br/>XRAYUI_PROXY4"]
+
+    Ipset1 --> Runtime{"🌐 Incoming packet<br/>(after B/R policy)"}
+    Ipset2 --> Runtime
+    NoIpset --> Doko["🚪 Xray dokodemo-door"]
+
+    Runtime -->|"dst IP ∈ XRAYUI_BYPASS4<br/>(both modes)"| Direct["↪️ Direct to WAN<br/>(skips Xray)"]
+    Runtime -->|"REDIRECT:<br/>dst IP ∉ XRAYUI_PROXY4"| Direct
+    Runtime -->|"Otherwise"| Doko
+
+    Doko --> XRules["Xray routing rules<br/>(proxy / freedom / blackhole)"]
+    Direct --> Internet["🌍 Internet"]
+    XRules --> Internet
+
+    style Start fill:#4a9eff,color:#fff,stroke:none
+    style Mode fill:#ff9800,color:#fff,stroke:none
+    style SkipRegex1 fill:#ffb74d,color:#000,stroke:none
+    style SkipRegex2 fill:#ffb74d,color:#000,stroke:none
+    style Runtime fill:#ff9800,color:#fff,stroke:none
+    style ExtractFree fill:#9c27b0,color:#fff,stroke:none
+    style ExtractProxy fill:#9c27b0,color:#fff,stroke:none
+    style Resolve1 fill:#9c27b0,color:#fff,stroke:none
+    style Resolve2 fill:#9c27b0,color:#fff,stroke:none
+    style Ipset1 fill:#607d8b,color:#fff,stroke:none
+    style Ipset2 fill:#607d8b,color:#fff,stroke:none
+    style NoIpset fill:#607d8b,color:#fff,stroke:none
+    style Doko fill:#9c27b0,color:#fff,stroke:none
+    style XRules fill:#4a9eff,color:#fff,stroke:none
+    style Direct fill:#4caf50,color:#fff,stroke:none
+    style Internet fill:#4caf50,color:#fff,stroke:none
+    style RuntimeAll fill:#4a9eff,color:#fff,stroke:none
+    style Ignored1 fill:#f44336,color:#fff,stroke:none
+    style Ignored2 fill:#f44336,color:#fff,stroke:none
+```
+
+The top half of the chart is **build-time**: when the Xray config is applied, XRAYUI extracts domains and resolves them once to populate the ipset. The bottom half is **runtime**: iptables matches the packet's destination IP against the ipset and decides whether it enters Xray or goes directly to WAN.
+
+> [!note]
+> The `dst ∈ XRAYUI_BYPASS4 → RETURN` rule is active in **both** modes (`BYPASS` and `REDIRECT`). `REDIRECT` additionally installs `dst ∉ XRAYUI_PROXY4 → RETURN`, so only packets whose destination IP landed in the "proxied" set actually reach Xray.
+
 ::: note
 Regex-based domains (entries starting with the `regexp:` prefix) cannot be inserted into ipsets and are ignored by this feature. They still apply inside Xray’s own matching engine.
 :::
