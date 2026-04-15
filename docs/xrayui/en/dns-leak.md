@@ -24,6 +24,52 @@ Use any of these test services:
 
 **Solution**: add a separate DNS inbound that explicitly dials a resolver and sends it via your outbound tunnel.
 
+## How a leak happens and how to close it
+
+The chart below shows a DNS query's path before and after setting up a dedicated DNS inbound.
+
+```mermaid
+flowchart TD
+    App["📱 Application<br/>(browser, game...)"] -->|"DNS query<br/>example.com"| Dnsmasq["🛜 dnsmasq<br/>on the router"]
+
+    Dnsmasq --> Decide{"Where to send<br/>upstream?"}
+
+    Decide -->|"❌ Unconfigured:<br/>ISP DNS"| ISP["🏢 ISP DNS<br/>(visible to ISP)"]
+    ISP --> Leak["💧 LEAK<br/>ISP sees the domains"]
+
+    Decide -->|"❌ Public DNS<br/>direct (8.8.8.8)"| QuicLeak["🌐 Packet leaves<br/>via WAN"]
+    QuicLeak --> Leak2["💧 ISP sees you<br/>querying a public<br/>resolver"]
+
+    Decide -->|"✅ With dedicated<br/>DNS inbound"| DnsInbound["🚪 Xray dokodemo-door<br/>:55100<br/>Follow redirect = OFF"]
+
+    DnsInbound --> TProxy["🔀 Transport: tproxy"]
+    TProxy --> Route["📋 Routing rule<br/>inbound: dns<br/>outbound: proxy"]
+    Route --> Proxy["🔐 Proxy outbound<br/>(VLESS/VMess/Trojan)"]
+    Proxy -->|"Encrypted<br/>tunnel"| VPS["☁️ VPS"]
+    VPS --> Resolver["🌍 Public resolver<br/>(8.8.8.8, 1.1.1.1...)"]
+    Resolver -->|"Answer"| VPS
+    VPS -->|"Through tunnel"| App
+
+    QuicBlock["🚫 Block QUIC<br/>(UDP 443 → DROP)"] -.->|"Forces browser<br/>to use TCP HTTPS"| App
+
+    style App fill:#4a9eff,color:#fff,stroke:none
+    style Dnsmasq fill:#4a9eff,color:#fff,stroke:none
+    style Decide fill:#ff9800,color:#fff,stroke:none
+    style ISP fill:#f44336,color:#fff,stroke:none
+    style Leak fill:#f44336,color:#fff,stroke:none
+    style QuicLeak fill:#f44336,color:#fff,stroke:none
+    style Leak2 fill:#f44336,color:#fff,stroke:none
+    style DnsInbound fill:#9c27b0,color:#fff,stroke:none
+    style TProxy fill:#9c27b0,color:#fff,stroke:none
+    style Route fill:#9c27b0,color:#fff,stroke:none
+    style Proxy fill:#4caf50,color:#fff,stroke:none
+    style VPS fill:#4caf50,color:#fff,stroke:none
+    style Resolver fill:#4caf50,color:#fff,stroke:none
+    style QuicBlock fill:#607d8b,color:#fff,stroke:none
+```
+
+The red branches are leak scenarios: queries exit via the ISP link. The green branch is the correct path: the DNS inbound intercepts queries, the routing rule steers them to the proxy outbound, and they reach the public resolver from the VPS side. QUIC blocking isn't strictly a DNS concern — it closes a parallel channel the browser could otherwise use to reveal your real IP around the proxy.
+
 ## How to configure XRAYUI
 
 > [!important]

@@ -2,6 +2,7 @@ import { defaultTheme } from '@vuepress/theme-default';
 import { defineUserConfig } from 'vuepress';
 import { viteBundler } from '@vuepress/bundler-vite';
 import { markdownHintPlugin } from '@vuepress/plugin-markdown-hint';
+import { markdownChartPlugin } from '@vuepress/plugin-markdown-chart';
 import { removeHtmlExtensionPlugin } from 'vuepress-plugin-remove-html-extension';
 
 const links_en = [
@@ -116,5 +117,9 @@ export default defineUserConfig({
     }
   },
   bundler: viteBundler(),
-  plugins: [markdownHintPlugin({ hint: true, alert: true }), removeHtmlExtensionPlugin()]
+  plugins: [
+    markdownHintPlugin({ hint: true, alert: true }),
+    markdownChartPlugin({ mermaid: true }),
+    removeHtmlExtensionPlugin()
+  ]
 });

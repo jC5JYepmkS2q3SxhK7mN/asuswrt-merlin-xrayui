@@ -29,6 +29,55 @@
 > [!info]
 > По умолчанию, если правила не указаны, применяется динамическое общее правило: **весь трафик перенаправляется** в процесс Xray.
 
+## Логика принятия решения
+
+Ниже показано, как XRAYUI решает, перехватывать ли конкретный пакет. Проверка выполняется на уровне iptables перед тем, как трафик попадёт в Xray.
+
+```mermaid
+flowchart TD
+    Pkt["📦 Исходящий пакет<br/>(src MAC, dst port, proto)"] --> MacRule{"Есть правило<br/>для этого MAC?"}
+
+    MacRule -->|"Да"| MacMode{"Режим<br/>MAC-правила"}
+    MacRule -->|"Нет"| GlobalMode{"Глобальный режим<br/>(по умолчанию)"}
+
+    MacMode -->|"redirect"| MacRedirPort{"Порт в списке<br/>исключений?"}
+    MacMode -->|"bypass"| MacByPort{"Порт в списке<br/>перенаправления?"}
+
+    MacRedirPort -->|"Да"| Bypass["↪️ Обход Xray<br/>(напрямую в WAN)"]
+    MacRedirPort -->|"Нет"| Redirect["🚪 Перенаправление<br/>в dokodemo-door Xray"]
+
+    MacByPort -->|"Да"| Redirect
+    MacByPort -->|"Нет"| Bypass
+
+    GlobalMode -->|"redirect"| GlobalRedirPort{"Порт в списке<br/>исключений?"}
+    GlobalMode -->|"bypass"| GlobalByPort{"Порт в списке<br/>перенаправления?"}
+
+    GlobalRedirPort -->|"Да"| Bypass
+    GlobalRedirPort -->|"Нет"| Redirect
+
+    GlobalByPort -->|"Да"| Redirect
+    GlobalByPort -->|"Нет"| Bypass
+
+    Redirect --> L2["→ Уровень 2: DNS обход<br/>→ Уровень 3: правила Xray"]
+    Bypass --> WAN["🌐 WAN / Интернет"]
+
+    style Pkt fill:#4a9eff,color:#fff,stroke:none
+    style MacRule fill:#ff9800,color:#fff,stroke:none
+    style MacMode fill:#ff9800,color:#fff,stroke:none
+    style GlobalMode fill:#ff9800,color:#fff,stroke:none
+    style MacRedirPort fill:#ffb74d,color:#000,stroke:none
+    style MacByPort fill:#ffb74d,color:#000,stroke:none
+    style GlobalRedirPort fill:#ffb74d,color:#000,stroke:none
+    style GlobalByPort fill:#ffb74d,color:#000,stroke:none
+    style Redirect fill:#9c27b0,color:#fff,stroke:none
+    style Bypass fill:#4caf50,color:#fff,stroke:none
+    style L2 fill:#607d8b,color:#fff,stroke:none
+    style WAN fill:#4caf50,color:#fff,stroke:none
+```
+
+> [!tip]
+> Правило для конкретного MAC всегда побеждает глобальное. Порты — это «исключения из режима»: в `redirect` они обходят Xray, в `bypass` — наоборот, направляются в Xray.
+
 ## Примеры
 
 Ниже приведена таблица, упорядоченная от самой простой конфигурации (только выбор режима) к более детализированным (указание портов и устройств). Это помогает показать, как разные комбинации влияют на итоговое поведение.

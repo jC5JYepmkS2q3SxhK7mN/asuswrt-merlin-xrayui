@@ -27,6 +27,55 @@ To manage B/R Policies, click the **Manage** button in the **Routing** section.
 > [!info]
 > By default, if no rules are specified, a dynamic general rule is applied: **all traffic is redirected** to the Xray process.
 
+## Decision Logic
+
+The chart below shows how XRAYUI decides whether to intercept a given packet. The check runs at the iptables level before traffic ever reaches Xray.
+
+```mermaid
+flowchart TD
+    Pkt["📦 Outgoing packet<br/>(src MAC, dst port, proto)"] --> MacRule{"Rule exists<br/>for this MAC?"}
+
+    MacRule -->|"Yes"| MacMode{"MAC rule<br/>mode"}
+    MacRule -->|"No"| GlobalMode{"Global mode<br/>(default)"}
+
+    MacMode -->|"redirect"| MacRedirPort{"Port in<br/>exclusion list?"}
+    MacMode -->|"bypass"| MacByPort{"Port in<br/>redirect list?"}
+
+    MacRedirPort -->|"Yes"| Bypass["↪️ Bypass Xray<br/>(direct to WAN)"]
+    MacRedirPort -->|"No"| Redirect["🚪 Redirect to<br/>Xray dokodemo-door"]
+
+    MacByPort -->|"Yes"| Redirect
+    MacByPort -->|"No"| Bypass
+
+    GlobalMode -->|"redirect"| GlobalRedirPort{"Port in<br/>exclusion list?"}
+    GlobalMode -->|"bypass"| GlobalByPort{"Port in<br/>redirect list?"}
+
+    GlobalRedirPort -->|"Yes"| Bypass
+    GlobalRedirPort -->|"No"| Redirect
+
+    GlobalByPort -->|"Yes"| Redirect
+    GlobalByPort -->|"No"| Bypass
+
+    Redirect --> L2["→ Layer 2: DNS bypass<br/>→ Layer 3: Xray rules"]
+    Bypass --> WAN["🌐 WAN / Internet"]
+
+    style Pkt fill:#4a9eff,color:#fff,stroke:none
+    style MacRule fill:#ff9800,color:#fff,stroke:none
+    style MacMode fill:#ff9800,color:#fff,stroke:none
+    style GlobalMode fill:#ff9800,color:#fff,stroke:none
+    style MacRedirPort fill:#ffb74d,color:#000,stroke:none
+    style MacByPort fill:#ffb74d,color:#000,stroke:none
+    style GlobalRedirPort fill:#ffb74d,color:#000,stroke:none
+    style GlobalByPort fill:#ffb74d,color:#000,stroke:none
+    style Redirect fill:#9c27b0,color:#fff,stroke:none
+    style Bypass fill:#4caf50,color:#fff,stroke:none
+    style L2 fill:#607d8b,color:#fff,stroke:none
+    style WAN fill:#4caf50,color:#fff,stroke:none
+```
+
+> [!tip]
+> A per-MAC rule always wins over the global rule. Ports act as "mode exceptions": in `redirect` mode they bypass Xray, in `bypass` mode they go into Xray.
+
 ## Examples
 
 Below is a table arranged from the simplest configuration (only setting a mode) to more detailed ones (specifying ports and devices). This helps illustrate how different combinations change the final behavior.
